@@ -870,10 +870,16 @@
         .toolbar { padding: 7px 10px; }
     }
     /* ===== CHAPTER DRAG REORDER ===== */
-    .chapter-item { cursor: grab; user-select: none; }
-    .chapter-item:active { cursor: grabbing; }
+    .chapter-item { user-select: none; }
     .chapter-item.dragging-chap { opacity: 0.3; }
     .chapter-item.chap-drag-over { border-top: 2px solid rgba(255,255,255,0.6); margin-top: -2px; }
+    .chap-drag-handle {
+        cursor: grab; opacity: 0; font-size: 0.7em; padding: 2px 3px;
+        color: rgba(255,255,255,0.4); transition: opacity 0.15s; flex-shrink: 0;
+        line-height: 1;
+    }
+    .chap-drag-handle:active { cursor: grabbing; }
+    .chapter-item:hover .chap-drag-handle { opacity: 1; }
 
     /* ===== SEARCH PANEL ===== */
     #searchPanel {
@@ -1153,7 +1159,7 @@
             <!-- 오른쪽: 사이드바 이미지 + 응원 메시지 -->
             <div class="settings-col">
                 <div class="setting-section-title">🖼 사이드바 이미지</div>
-                <div class="setting-warn" style="margin-bottom:4px;">여백이 거의 없는 배경 투명화 파일을 추천드립니다.</div>
+                <div class="setting-warn" style="margin-bottom:4px;">배경 투명화 PNG 파일을 추천드립니다.</div>
                 <!-- 이미지 미리보기 + 컨트롤 가로 2단 -->
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                     <div class="sbi-preview-wrap" id="sbiPreviewWrap" style="flex:0 0 auto;width:calc(50% - 5px);">
@@ -1245,7 +1251,7 @@
 <!-- Search Panel -->
 <div id="searchPanel">
     <div class="search-header">
-        <input type="text" class="search-input" id="searchInput" placeholder="대사, 장면, 행동, 효과음 검색..." autocomplete="off">
+        <input type="text" class="search-input" id="searchInput" placeholder="현재 프로젝트 내 검색 (대사, 장면, 인물명...)" autocomplete="off">
         <span class="search-count" id="searchCount"></span>
         <button class="search-close-btn" onclick="closeSearchPanel()">✕</button>
     </div>
@@ -1607,7 +1613,8 @@
     function getEffectiveBinding() {
         const proj = appData.projects.find(p => p.id === activeProjId);
         if (proj && proj.binding) return proj.binding;
-        return document.getElementById('bindingSelect').value;
+        const sel = document.getElementById('bindingSelect');
+        return sel ? sel.value : 'left';
     }
 
     function onProjBindingChange(projId, val) {
@@ -1941,8 +1948,10 @@
         const curProj = appData.projects.find(p => p.id === activeProjId);
         const curChap = curProj ? curProj.chapters.find(c => c.id === activeChapId) : null;
         if (curChap) {
-            curChap.binding = document.getElementById('bindingSelect').value;
-            curChap.firstPageMode = document.getElementById('firstPageSelect').value;
+            const bindSel = document.getElementById('bindingSelect');
+            const fpSel = document.getElementById('firstPageSelect');
+            if (bindSel) curChap.binding = bindSel.value;
+            if (fpSel) curChap.firstPageMode = fpSel.value;
         }
         const exportData = {
             projects: [], activeProjId, activeChapId,
@@ -2112,7 +2121,15 @@
     function switchContext(pId, cId) {
         if (activeProjId && activeChapId) {
             const cp = appData.projects.find(p => p.id === activeProjId);
-            if (cp) { const cc = cp.chapters.find(c => c.id === activeChapId); if (cc) { cc.binding = document.getElementById('bindingSelect').value; cc.firstPageMode = document.getElementById('firstPageSelect').value; } }
+            if (cp) {
+                const cc = cp.chapters.find(c => c.id === activeChapId);
+                if (cc) {
+                    const bs = document.getElementById('bindingSelect');
+                    const fps = document.getElementById('firstPageSelect');
+                    if (bs) cc.binding = bs.value;
+                    if (fps) cc.firstPageMode = fps.value;
+                }
+            }
         }
         activeProjId = pId; activeChapId = cId;
         // 챕터 전환 시 이전 상태 초기화 (undo/redo 복원 중엔 스택 유지)
@@ -2122,8 +2139,10 @@
         const proj = appData.projects.find(p => p.id === pId);
         const chap = proj.chapters.find(c => c.id === cId);
         pagesArray = chap.pagesArray;
-        document.getElementById('bindingSelect').value = proj.binding || chap.binding;
-        document.getElementById('firstPageSelect').value = chap.firstPageMode;
+        const bindSel = document.getElementById('bindingSelect');
+        const fpSel = document.getElementById('firstPageSelect');
+        if (bindSel) bindSel.value = proj.binding || chap.binding;
+        if (fpSel) fpSel.value = chap.firstPageMode;
         updateMainTitle(); renderSidebar(); updatePageScale(); renderPages();
     }
 
@@ -2301,6 +2320,7 @@
                 const isActive = (proj.id === activeProjId && chap.id === activeChapId);
                 const cDiv = document.createElement('div'); cDiv.className = `chapter-item ${isActive ? 'active' : ''}`;
                 cDiv.innerHTML = `
+                    <span class="chap-drag-handle" title="드래그하여 순서 변경">⠿</span>
                     <span class="chap-name-text" onclick="switchContext(${proj.id}, ${chap.id})" title="${chap.name}">${chap.name}</span>
                     <div class="proj-options-wrap">
                         <button class="chap-more-btn" onclick="toggleChapMenu(${proj.id}, ${chap.id}, event)">⋮</button>
@@ -2310,8 +2330,9 @@
                         </div>
                     </div>`;
                 cList.appendChild(cDiv);
-                // Chapter drag-to-reorder
-                addChapDragReorder(cDiv, proj.id, chap.id);
+                // Chapter drag-to-reorder (핸들에서만 시작)
+                const handle = cDiv.querySelector('.chap-drag-handle');
+                addChapDragReorder(handle, cDiv, proj.id, chap.id);
             });
             body.appendChild(cList);
 
@@ -2320,9 +2341,12 @@
             const charSection = document.createElement('div'); charSection.className = 'char-section';
             const charHeader = document.createElement('div');
             charHeader.className = 'char-section-header';
+            if (proj._charSectionOpen) charHeader.classList.add('open');
             charHeader.innerHTML = `<span>👤 인물 <span class="char-count">(${chars.length})</span></span><span class="char-toggle">▾</span>`;
             const charBody = document.createElement('div'); charBody.className = 'char-section-body';
+            if (proj._charSectionOpen) charBody.classList.add('open');
             charHeader.addEventListener('click', () => {
+                proj._charSectionOpen = !proj._charSectionOpen;
                 charHeader.classList.toggle('open');
                 charBody.classList.toggle('open');
             });
@@ -2480,7 +2504,8 @@
     function renderPages() {
         const workspace = document.getElementById('workspace');
         const binding = getEffectiveBinding();
-        const firstPageMode = document.getElementById('firstPageSelect').value;
+        const firstPageSel = document.getElementById('firstPageSelect');
+        const firstPageMode = firstPageSel ? firstPageSel.value : 'single';
         workspace.dataset.binding = binding; // CSS selector #workspace[data-binding] 활성화
         workspace.innerHTML = '';
         if (pagesArray.length === 0) return;
@@ -3002,10 +3027,27 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
 
-        ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal'].forEach(sel => {
+        ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel'].forEach(sel => {
             const el = doc.querySelector(sel); if (el) el.remove();
         });
-        const toolbar = doc.querySelector('.toolbar'); if (toolbar) toolbar.remove();
+        if (!withEditMode) {
+            // 뷰어 모드: 툴바 전체 제거
+            const toolbar = doc.querySelector('.toolbar'); if (toolbar) toolbar.remove();
+        } else {
+            // 편집 모드: 툴바를 유지하되 불필요한 요소만 제거
+            const toolbar = doc.querySelector('.toolbar');
+            if (toolbar) {
+                // 사이드바 토글, 검색/대사 버튼, 단축키 힌트 제거
+                toolbar.querySelectorAll('.toggle-sidebar-btn,.kbd-hint').forEach(el => el.remove());
+                // 출력(export) 드롭다운 제거
+                const exportWrap = toolbar.querySelector('#exportWrap'); if (exportWrap) exportWrap.remove();
+                // 검색/대사 버튼 제거 (onclick 기준)
+                toolbar.querySelectorAll('.toolbar-save-btn').forEach(btn => {
+                    const oc = btn.getAttribute('onclick') || '';
+                    if (oc.includes('toggleDialoguePanel') || oc.includes('toggleSearchPanel')) btn.remove();
+                });
+            }
+        }
 
         // ① panel-selected 테두리 제거 (내보내기 시 선택 상태 초기화)
         doc.querySelectorAll('.panel-selected').forEach(p => p.classList.remove('panel-selected'));
@@ -3330,8 +3372,16 @@ function viewerSaveAll() {
     if(!ws||!ws.querySelectorAll('.page-wrapper').length){initApp();return;}
     var wrappers=Array.from(ws.querySelectorAll('.page-wrapper'));
     pagesArray=wrappers; activeProjId=1; activeChapId=1;
+    // 저장된 챕터 데이터에서 바인딩/첫쪽모드 읽기
+    var savedData=null;
+    try{var de=document.getElementById('manga-chap-data');if(de)savedData=JSON.parse(de.textContent);}catch(e){}
+    var chapBinding=(savedData&&savedData.binding)||'left';
+    var chapFPM=(savedData&&savedData.firstPageMode)||'single';
     appData.projects=[{id:1,name:'편집문서',pageSize:null,binding:null,characters:[],
-        chapters:[{id:1,name:'편집문서',binding:'left',firstPageMode:'single',pagesArray:wrappers}]}];
+        chapters:[{id:1,name:'편집문서',binding:chapBinding,firstPageMode:chapFPM,pagesArray:wrappers}]}];
+    // 툴바 셀렉트 동기화
+    var bs=document.getElementById('bindingSelect');if(bs)bs.value=chapBinding;
+    var fps=document.getElementById('firstPageSelect');if(fps)fps.value=chapFPM;
     var t=localStorage.getItem('mangaEditorTheme');
     if(t&&document.getElementById('themePicker')){document.getElementById('themePicker').value=t;applyTheme(t);}
     if(typeof window.updatePageScale==='function') updatePageScale();
@@ -3344,6 +3394,11 @@ function viewerSaveAll() {
     });
     assignPageNumbers();updateCutNumbers();
     var inp=document.getElementById('pageCountInput');if(inp)inp.value=wrappers.length;
+    // 뷰어 헤더에 제목 설정
+    var titleEl=document.getElementById('main-title-text');
+    if(titleEl)titleEl.innerHTML='📖 '+(savedData?savedData.projName:'편집문서');
+    var chapTitleEl=document.getElementById('current-chapter-title');
+    if(chapTitleEl)chapTitleEl.textContent=savedData?('— '+savedData.chapName):'';
 })();$2`
             );
         }
@@ -3423,8 +3478,8 @@ function viewerSaveAll() {
                 chap.firstPageMode = chapData.firstPageMode || chap.firstPageMode;
                 pagesArray = newPages;
 
-                document.getElementById('bindingSelect').value = chap.binding;
-                document.getElementById('firstPageSelect').value = chap.firstPageMode;
+                const bs = document.getElementById('bindingSelect'); if (bs) bs.value = chap.binding;
+                const fps = document.getElementById('firstPageSelect'); if (fps) fps.value = chap.firstPageMode;
                 renderPages();
                 scheduleAutoSave();
                 showToast(`✅ "${chapData.chapName}" 불러오기 완료!`, 'success');
@@ -3521,13 +3576,12 @@ function viewerSaveAll() {
     document.getElementById('charModal').addEventListener('click', e => { if (e.target.id === 'charModal') closeCharModal(); });
 
     // ===== CHAPTER DRAG REORDER =====
-    function addChapDragReorder(chapDiv, projId, chapId) {
+    function addChapDragReorder(handle, chapDiv, projId, chapId) {
         let startY, dragging = false;
-        const dragThreshold = 6;
+        const dragThreshold = 10;
 
-        chapDiv.addEventListener('mousedown', e => {
-            const tag = e.target.tagName.toLowerCase();
-            if (['button', 'input', 'select'].includes(tag) || e.target.closest('.proj-options-wrap')) return;
+        handle.addEventListener('mousedown', e => {
+            e.preventDefault(); // 핸들 클릭 시 텍스트 선택 방지
             startY = e.clientY; dragging = false;
 
             const cList = chapDiv.closest('.chapter-list');
@@ -3621,9 +3675,11 @@ function viewerSaveAll() {
         const fieldLabels = { scene: '장면', action: '행동', dialogue: '대사', sfx: '효과음', notes: '특이사항' };
         const badgeClasses = { scene: 'sr-badge-scene', action: 'sr-badge-action', dialogue: 'sr-badge-dialogue', sfx: 'sr-badge-sfx', notes: 'sr-badge-notes' };
 
-        appData.projects.forEach(proj => {
-            const chars = proj.characters || [];
-            proj.chapters.forEach(chap => {
+        // 현재 프로젝트 범위에서만 검색
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        if (!proj) { container.innerHTML = '<div class="search-empty">활성 프로젝트가 없습니다</div>'; countEl.textContent = ''; return; }
+        const chars = proj.characters || [];
+        proj.chapters.forEach(chap => {
                 chap.pagesArray.forEach((wrapper, pageIdx) => {
                     wrapper.querySelectorAll('.panel').forEach(panel => {
                         const editMode = panel.querySelector('.edit-mode');
@@ -3671,7 +3727,6 @@ function viewerSaveAll() {
                     });
                 });
             });
-        });
 
         countEl.textContent = results.length + '건';
 
@@ -3691,7 +3746,7 @@ function viewerSaveAll() {
         let html = '';
         Object.values(grouped).forEach(group => {
             html += `<div class="search-result-group">`;
-            html += `<div class="search-group-title">📖 ${escapeHtml(group.projName)} — ${escapeHtml(group.chapName)}</div>`;
+            html += `<div class="search-group-title">📖 ${escapeHtml(group.chapName)}</div>`;
             group.items.forEach(r => {
                 const label = fieldLabels[r.type] || r.type;
                 const badgeCls = badgeClasses[r.type] || 'sr-badge-scene';
