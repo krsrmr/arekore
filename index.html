@@ -1159,7 +1159,7 @@
             <!-- 오른쪽: 사이드바 이미지 + 응원 메시지 -->
             <div class="settings-col">
                 <div class="setting-section-title">🖼 사이드바 이미지</div>
-                <div class="setting-warn" style="margin-bottom:4px;">배경 투명화 PNG 파일을 추천드립니다.</div>
+                <div class="setting-warn" style="margin-bottom:4px;">여백이 거의 없는 배경 투명화 파일을 추천드립니다.</div>
                 <!-- 이미지 미리보기 + 컨트롤 가로 2단 -->
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                     <div class="sbi-preview-wrap" id="sbiPreviewWrap" style="flex:0 0 auto;width:calc(50% - 5px);">
@@ -1186,10 +1186,17 @@
                     </div>
                 </div>
 
+                <!-- 이미지 선택/삭제 버튼 — 미리보기 바로 아래 -->
+                <div class="sbi-btn-row">
+                    <input type="file" id="sbiFileInput" accept="image/*" style="display:none" onchange="loadSbiImage(event)">
+                    <button class="sbi-file-btn" onclick="document.getElementById('sbiFileInput').click()">📁 이미지 선택</button>
+                    <button class="modal-btn btn-clear-save" style="margin:0;flex:none;padding:8px 12px;" id="sbiClearBtn" onclick="clearSbiImage()" title="이미지 제거">✕</button>
+                </div>
+
                 <!-- 응원 메시지 — 이미지 있을 때만 표시 -->
                 <div id="cheerSection" style="display:none;">
-                    <div class="modal-divider"></div>
-                    <div class="setting-section-title">🎉 응원 메시지</div>
+                    <div class="modal-divider" style="margin-top:10px;"></div>
+                    <div class="setting-section-title" style="margin-top:10px;">🎉 응원 메시지</div>
                     <div class="setting-item" style="justify-content:space-between;">
                         <label style="text-transform:none;font-size:0.88em;">이미지 클릭 시 응원</label>
                         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
@@ -1203,13 +1210,6 @@
                             placeholder="응원 멘트를 입력하세요..."
                             oninput="saveCheerMessages()"></textarea>
                     </div>
-                </div>
-
-                <div class="modal-divider"></div>
-                <div class="sbi-btn-row">
-                    <input type="file" id="sbiFileInput" accept="image/*" style="display:none" onchange="loadSbiImage(event)">
-                    <button class="sbi-file-btn" onclick="document.getElementById('sbiFileInput').click()">📁 이미지 선택</button>
-                    <button class="modal-btn btn-clear-save" style="margin:0;flex:none;padding:8px 12px;" id="sbiClearBtn" onclick="clearSbiImage()" title="이미지 제거">✕</button>
                 </div>
             </div>
         </div>
@@ -1308,6 +1308,7 @@
     // ===== TOAST =====
     function showToast(msg, type = '', duration = 2200) {
         const t = document.getElementById('toast');
+        if (!t) return;
         t.textContent = msg; t.className = type ? `show ${type}` : 'show';
         clearTimeout(t._timer);
         t._timer = setTimeout(() => { t.className = ''; }, duration);
@@ -1587,17 +1588,20 @@
     function toggleExportDropdown() {
         const btn = document.getElementById('exportDropdownBtn');
         const panel = document.getElementById('exportDropdownPanel');
+        if (!btn || !panel) return;
         const isOpen = panel.classList.contains('open');
         btn.classList.toggle('open', !isOpen);
         panel.classList.toggle('open', !isOpen);
     }
     function openSettings() {
-        document.getElementById('settingsModal').classList.add('show');
+        const modal = document.getElementById('settingsModal');
+        if (!modal) return;
+        modal.classList.add('show');
         renderSbiSettings();
         renderCheerSettings();
     }
-    function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
-    function toggleShortcuts() { document.getElementById('shortcuts-hint').classList.toggle('visible'); }
+    function closeSettings() { const m = document.getElementById('settingsModal'); if (m) m.classList.remove('show'); }
+    function toggleShortcuts() { const h = document.getElementById('shortcuts-hint'); if (h) h.classList.toggle('visible'); }
 
     // ===== SIDEBAR =====
     // ===== DYNAMIC PAGE SCALE =====
@@ -1702,6 +1706,7 @@
     function toggleSidebar() {
         if (_toggleSidebarLock) return;
         const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
         if (window.innerWidth > 1100) sidebar.classList.toggle('desktop-closed');
         else sidebar.classList.toggle('mobile-open');
         setTimeout(updatePageScale, 320);
@@ -1710,15 +1715,17 @@
     }
     window.addEventListener('resize', () => {
         const sidebar = document.getElementById('sidebar');
-        if (window.innerWidth <= 1100) sidebar.classList.remove('desktop-closed');
-        else sidebar.classList.remove('mobile-open');
+        if (sidebar) {
+            if (window.innerWidth <= 1100) sidebar.classList.remove('desktop-closed');
+            else sidebar.classList.remove('mobile-open');
+        }
         debouncedUpdatePageScale();
     });
     // Close mobile sidebar on outside click
     document.addEventListener('click', (e) => {
         if (window.innerWidth > 1100) return;
         const sidebar = document.getElementById('sidebar');
-        if (!sidebar.classList.contains('mobile-open')) return;
+        if (!sidebar || !sidebar.classList.contains('mobile-open')) return;
 
         // e.target이 DOM에서 제거된 경우(renderSidebar 등으로 재구성됨) →
         // 원래 사이드바 안 클릭이었으므로 닫지 않음
@@ -1736,7 +1743,8 @@
     let _toggleMenuLock = false;
     function toggleMenu() {
         if (_toggleMenuLock) return;
-        document.getElementById('topMenu').classList.toggle('hidden');
+        const topMenu = document.getElementById('topMenu');
+        if (topMenu) topMenu.classList.toggle('hidden');
         _toggleMenuLock = true;
         setTimeout(() => { _toggleMenuLock = false; }, 450);
     }
@@ -1757,7 +1765,8 @@
     })();
 
     // #topMenu 내부 버튼/입력 터치 시 → 락 설정 (고스트 클릭이 도구▾에 닿아도 무시)
-    document.getElementById('topMenu').addEventListener('touchend', () => {
+    const _topMenuEl = document.getElementById('topMenu');
+    if (_topMenuEl) _topMenuEl.addEventListener('touchend', () => {
         _toggleMenuLock = true;
         setTimeout(() => { _toggleMenuLock = false; }, 450);
     }, { passive: true });
@@ -1888,8 +1897,8 @@
         // Escape
         if (e.key === 'Escape') {
             // 검색/대사 패널 닫기
-            if (document.getElementById('searchPanel').classList.contains('open')) { closeSearchPanel(); return; }
-            if (document.getElementById('dialoguePanel').classList.contains('open')) { closeDialoguePanel(); return; }
+            if (document.getElementById('searchPanel')?.classList.contains('open')) { closeSearchPanel(); return; }
+            if (document.getElementById('dialoguePanel')?.classList.contains('open')) { closeDialoguePanel(); return; }
             if (copiedPanelData?.isCut && copiedPanelData.src?.isConnected) {
                 copiedPanelData.src.style.opacity = '';
                 copiedPanelData = null;
@@ -1898,7 +1907,7 @@
             closeSettings();
             closeProjMemoModal();
             document.querySelectorAll('.proj-dropdown').forEach(m => m.classList.remove('show'));
-            document.getElementById('shortcuts-hint').classList.remove('visible');
+            document.getElementById('shortcuts-hint')?.classList.remove('visible');
             document.getElementById('exportDropdownBtn')?.classList.remove('open');
             document.getElementById('exportDropdownPanel')?.classList.remove('open');
             return;
@@ -2041,26 +2050,34 @@
 
     function scheduleAutoSave() {
         // 대사 패널이 열려있으면 갱신
-        if (document.getElementById('dialoguePanel').classList.contains('open')) renderDialogueList();
+        const dlgPanel = document.getElementById('dialoguePanel');
+        if (dlgPanel && dlgPanel.classList.contains('open')) renderDialogueList();
         // takeSnapshot은 scheduleAutoSave와 분리 — 각 액션에서 직접 호출
         const badge = document.getElementById('autosaveBadge');
-        badge.textContent = '저장 중...'; badge.className = 'autosave-badge saving';
+        const storageKey = window._exportStorageKey || 'mangaEditorAutoSave';
+        if (badge) { badge.textContent = '저장 중...'; badge.className = 'autosave-badge saving'; }
         clearTimeout(autoSaveTimer);
         autoSaveTimer = setTimeout(() => {
             try {
-                localStorage.setItem('mangaEditorAutoSave', JSON.stringify(getSerializedData()));
+                localStorage.setItem(storageKey, JSON.stringify(getSerializedData()));
                 const now = new Date();
                 const t = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-                badge.textContent = `✓ 자동 저장됨 ${t}`; badge.className = 'autosave-badge saved';
-                setTimeout(() => { badge.textContent = '자동 저장 켜짐'; badge.className = 'autosave-badge'; }, 3500);
-            } catch { badge.textContent = '저장 실패 (용량 초과?)'; badge.className = 'autosave-badge'; }
+                if (badge) { badge.textContent = `✓ 자동 저장됨 ${t}`; badge.className = 'autosave-badge saved';
+                    setTimeout(() => { badge.textContent = '자동 저장 켜짐'; badge.className = 'autosave-badge'; }, 3500); }
+            } catch {
+                if (badge) { badge.textContent = '저장 실패 (용량 초과?)'; badge.className = 'autosave-badge'; }
+            }
         }, 1800);
     }
 
-    function clearAutoSave() { localStorage.removeItem('mangaEditorAutoSave'); showToast('자동 저장 데이터를 삭제했습니다.'); }
+    function clearAutoSave() {
+        const storageKey = window._exportStorageKey || 'mangaEditorAutoSave';
+        localStorage.removeItem(storageKey); showToast('자동 저장 데이터를 삭제했습니다.');
+    }
 
     function tryRestoreAutoSave() {
-        const saved = localStorage.getItem('mangaEditorAutoSave');
+        const storageKey = window._exportStorageKey || 'mangaEditorAutoSave';
+        const saved = localStorage.getItem(storageKey);
         if (!saved) return false;
         try {
             const data = JSON.parse(saved);
@@ -2193,12 +2210,16 @@
         const proj = appData.projects.find(p => p.id === pId);
         if (!proj) return;
         _memoTargetProjId = pId;
-        document.getElementById('projMemoTitle').textContent = `📝 ${proj.name} — 메모`;
-        document.getElementById('projMemoTextarea').value = proj.memo || '';
-        document.getElementById('projMemoModal').classList.add('show');
+        const titleEl = document.getElementById('projMemoTitle');
+        const textEl = document.getElementById('projMemoTextarea');
+        const modal = document.getElementById('projMemoModal');
+        if (titleEl) titleEl.textContent = `📝 ${proj.name} — 메모`;
+        if (textEl) textEl.value = proj.memo || '';
+        if (modal) modal.classList.add('show');
     }
     function closeProjMemoModal() {
-        document.getElementById('projMemoModal').classList.remove('show');
+        const modal = document.getElementById('projMemoModal');
+        if (modal) modal.classList.remove('show');
         _memoTargetProjId = null;
     }
     function saveProjMemo() {
@@ -2210,7 +2231,8 @@
         }
         closeProjMemoModal();
     }
-    document.getElementById('projMemoModal').addEventListener('click', e => {
+    const _projMemoModalEl = document.getElementById('projMemoModal');
+    if (_projMemoModalEl) _projMemoModalEl.addEventListener('click', e => {
         if (e.target.id === 'projMemoModal') closeProjMemoModal();
     });
 
@@ -2252,13 +2274,17 @@
         const proj = appData.projects.find(p => p.id === activeProjId);
         const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
         if (proj) {
-            document.getElementById('main-title-text').innerHTML = `📖 ${proj.name}`;
-            document.getElementById('current-chapter-title').textContent = chap ? `— ${chap.name}` : '';
+            const titleEl = document.getElementById('main-title-text');
+            const chapEl = document.getElementById('current-chapter-title');
+            if (titleEl) titleEl.innerHTML = `📖 ${proj.name}`;
+            if (chapEl) chapEl.textContent = chap ? `— ${chap.name}` : '';
         }
     }
 
     function renderSidebar() {
-        const tree = document.getElementById('sidebar-scroll'); tree.innerHTML = '';
+        const tree = document.getElementById('sidebar-scroll');
+        if (!tree) return;
+        tree.innerHTML = '';
         appData.projects.forEach(proj => {
             if (proj.collapsed === undefined) proj.collapsed = false;
             const pDiv = document.createElement('div');
@@ -3009,8 +3035,10 @@
 
     // ===== EXPORT VIEWER =====
     function exportViewerHTML() {
-        const withCommentary = document.getElementById('chkCommentary').checked;
-        const withEditMode   = document.getElementById('chkEditMode').checked;
+        const chkComm = document.getElementById('chkCommentary');
+        const chkEdit = document.getElementById('chkEditMode');
+        const withCommentary = chkComm ? chkComm.checked : false;
+        const withEditMode   = chkEdit ? chkEdit.checked : false;
 
         // 내보내기 전 선택 상태 해제
         if (activePanel) { activePanel.classList.remove('panel-selected'); activePanel = null; }
@@ -3034,30 +3062,45 @@
             // 뷰어 모드: 툴바 전체 제거
             const toolbar = doc.querySelector('.toolbar'); if (toolbar) toolbar.remove();
         } else {
-            // 편집 모드: 툴바를 유지하되 불필요한 요소만 제거
+            // 편집 모드: 툴바 하나로 통합 (제목 + 저장 + 편집 도구)
             const toolbar = doc.querySelector('.toolbar');
             if (toolbar) {
-                // 사이드바 토글, 검색/대사 버튼, 단축키 힌트 제거
+                // 불필요한 요소 제거
                 toolbar.querySelectorAll('.toggle-sidebar-btn,.kbd-hint').forEach(el => el.remove());
-                // 출력(export) 드롭다운 제거
                 const exportWrap = toolbar.querySelector('#exportWrap'); if (exportWrap) exportWrap.remove();
-                // 검색/대사 버튼 제거 (onclick 기준)
-                toolbar.querySelectorAll('.toolbar-save-btn').forEach(btn => {
-                    const oc = btn.getAttribute('onclick') || '';
-                    if (oc.includes('toggleDialoguePanel') || oc.includes('toggleSearchPanel')) btn.remove();
-                });
+                toolbar.querySelectorAll('.toolbar-save-btn').forEach(btn => btn.remove());
+
+                // 제목을 프로젝트 — 에피소드 형태로 교체
+                const titleText = toolbar.querySelector('#main-title-text');
+                if (titleText) titleText.innerHTML = `📖 ${pName}`;
+                const chapTitle = toolbar.querySelector('#current-chapter-title');
+                if (chapTitle) chapTitle.textContent = `— ${chap.name}`;
+
+                // 초록색 파일 저장 버튼을 toolbar-top 우측에 삽입
+                const toolbarTop = toolbar.querySelector('.toolbar-top');
+                const menuBtn = toolbar.querySelector('#toggleMenuBtn');
+                if (menuBtn) menuBtn.textContent = '편집 도구 ▾';
+                if (toolbarTop) {
+                    const saveBtn = doc.createElement('button');
+                    saveBtn.id = 'viewer-save-btn';
+                    saveBtn.textContent = '💾 파일 저장';
+                    saveBtn.setAttribute('onclick', 'viewerSaveAll()');
+                    toolbarTop.appendChild(saveBtn);
+                }
             }
         }
 
         // ① panel-selected 테두리 제거 (내보내기 시 선택 상태 초기화)
         doc.querySelectorAll('.panel-selected').forEach(p => p.classList.remove('panel-selected'));
 
-        // Viewer header
-        const viewerHeader = doc.createElement('div');
-        viewerHeader.id = 'viewer-header';
-        viewerHeader.innerHTML = `<span class="vh-title">📖 ${pName}</span><span class="vh-sep">—</span><span class="vh-chap">${chap.name}</span>`;
+        // Viewer header (뷰어 전용 — 편집 모드에서는 툴바에 통합되므로 생략)
         const mc = doc.querySelector('#main-content');
-        if (mc) mc.insertBefore(viewerHeader, mc.firstChild);
+        if (!withEditMode) {
+            const viewerHeader = doc.createElement('div');
+            viewerHeader.id = 'viewer-header';
+            viewerHeader.innerHTML = `<span class="vh-title">📖 ${pName}</span><span class="vh-sep">—</span><span class="vh-chap">${chap.name}</span>`;
+            if (mc) mc.insertBefore(viewerHeader, mc.firstChild);
+        }
 
         doc.body.style.overflow = 'auto'; doc.body.style.height = 'auto';
         const al = doc.querySelector('#app-layout'); if (al) al.style.cssText = 'display:block;height:auto;width:100%;overflow:visible;';
@@ -3342,18 +3385,12 @@ function viewerSaveAll() {
 `;
             doc.body.appendChild(viewerSaveScript);
 
-            const saveBtn = doc.createElement('button');
-            saveBtn.id = 'viewer-save-btn';
-            saveBtn.textContent = '💾 전체 저장';
-            saveBtn.setAttribute('onclick', 'viewerSaveAll()');
-            const vh = doc.getElementById('viewer-header');
-            if (vh) vh.appendChild(saveBtn);
-
             const saveBtnStyle = doc.createElement('style');
             saveBtnStyle.textContent = `
-                #viewer-save-btn { margin-left:auto; padding:5px 14px; background:#166534; color:white;
+                #viewer-save-btn { padding:5px 14px; background:#166534; color:white;
                     border:none; border-radius:5px; font-weight:700; cursor:pointer;
-                    font-size:0.82em; font-family:inherit; transition:background 0.2s; }
+                    font-size:0.82em; font-family:inherit; transition:background 0.2s;
+                    white-space:nowrap; flex-shrink:0; }
                 #viewer-save-btn:hover { background:#1a8a4a; }
             `;
             doc.head.appendChild(saveBtnStyle);
@@ -3370,16 +3407,38 @@ function viewerSaveAll() {
                 `$1(function(){
     var ws=document.getElementById('workspace');
     if(!ws||!ws.querySelectorAll('.page-wrapper').length){initApp();return;}
-    var wrappers=Array.from(ws.querySelectorAll('.page-wrapper'));
-    pagesArray=wrappers; activeProjId=1; activeChapId=1;
-    // 저장된 챕터 데이터에서 바인딩/첫쪽모드 읽기
+
+    // 내보내기 파일 전용 자동 저장 키 (메인 에디터와 충돌 방지)
     var savedData=null;
     try{var de=document.getElementById('manga-chap-data');if(de)savedData=JSON.parse(de.textContent);}catch(e){}
+    var exportId=(savedData?savedData.projId+'_'+savedData.chapId:'export');
+    window._exportStorageKey='mangaExport_'+exportId;
+
+    // 자동 저장 데이터 복원 시도
+    var autoSaved=localStorage.getItem(window._exportStorageKey);
+    if(autoSaved){
+        try{
+            var asData=JSON.parse(autoSaved);
+            if(asData&&asData.projects&&asData.projects.length>0){
+                if(confirm('이전에 자동 저장된 작업이 있습니다. 불러오시겠습니까?\\n(취소하면 내보내기 시점의 상태로 시작합니다)')){
+                    isUndoRedoing=true;
+                    loadFromData(asData);
+                    isUndoRedoing=false;
+                    return;
+                }
+            }
+        }catch(e){console.warn('auto-restore failed',e);}
+    }
+
+    // 자동 저장 없거나 거부 시: 내보내기 시점 DOM에서 초기화
+    var wrappers=Array.from(ws.querySelectorAll('.page-wrapper'));
+    pagesArray=wrappers; activeProjId=1; activeChapId=1;
     var chapBinding=(savedData&&savedData.binding)||'left';
     var chapFPM=(savedData&&savedData.firstPageMode)||'single';
-    appData.projects=[{id:1,name:'편집문서',pageSize:null,binding:null,characters:[],
-        chapters:[{id:1,name:'편집문서',binding:chapBinding,firstPageMode:chapFPM,pagesArray:wrappers}]}];
-    // 툴바 셀렉트 동기화
+    var projName=(savedData&&savedData.projName)||'편집문서';
+    var chapName=(savedData&&savedData.chapName)||'편집문서';
+    appData.projects=[{id:1,name:projName,pageSize:null,binding:null,characters:[],
+        chapters:[{id:1,name:chapName,binding:chapBinding,firstPageMode:chapFPM,pagesArray:wrappers}]}];
     var bs=document.getElementById('bindingSelect');if(bs)bs.value=chapBinding;
     var fps=document.getElementById('firstPageSelect');if(fps)fps.value=chapFPM;
     var t=localStorage.getItem('mangaEditorTheme');
@@ -3394,11 +3453,6 @@ function viewerSaveAll() {
     });
     assignPageNumbers();updateCutNumbers();
     var inp=document.getElementById('pageCountInput');if(inp)inp.value=wrappers.length;
-    // 뷰어 헤더에 제목 설정
-    var titleEl=document.getElementById('main-title-text');
-    if(titleEl)titleEl.innerHTML='📖 '+(savedData?savedData.projName:'편집문서');
-    var chapTitleEl=document.getElementById('current-chapter-title');
-    if(chapTitleEl)chapTitleEl.textContent=savedData?('— '+savedData.chapName):'';
 })();$2`
             );
         }
@@ -3496,11 +3550,13 @@ function viewerSaveAll() {
 
     function openAddCharModal(projId) {
         charModalMode = { mode: 'add', projId };
+        const modal = document.getElementById('charModal');
+        if (!modal) return;
         document.getElementById('charModalTitle').textContent = '👤 인물 추가';
         document.getElementById('charNameInput').value = '';
         document.getElementById('charColorInput').value = '#eff6ff';
-        document.getElementById('charModal').classList.add('show');
-        setTimeout(() => document.getElementById('charNameInput').focus(), 50);
+        modal.classList.add('show');
+        setTimeout(() => document.getElementById('charNameInput')?.focus(), 50);
     }
 
     function openEditCharModal(projId, charId, e) {
@@ -3509,15 +3565,18 @@ function viewerSaveAll() {
         const ch = (proj.characters || []).find(c => c.id === charId);
         if (!ch) return;
         charModalMode = { mode: 'edit', projId, charId };
+        const modal = document.getElementById('charModal');
+        if (!modal) return;
         document.getElementById('charModalTitle').textContent = '👤 인물 수정';
         document.getElementById('charNameInput').value = ch.name;
         document.getElementById('charColorInput').value = ch.color;
-        document.getElementById('charModal').classList.add('show');
-        setTimeout(() => document.getElementById('charNameInput').focus(), 50);
+        modal.classList.add('show');
+        setTimeout(() => document.getElementById('charNameInput')?.focus(), 50);
     }
 
     function closeCharModal() {
-        document.getElementById('charModal').classList.remove('show');
+        const modal = document.getElementById('charModal');
+        if (modal) modal.classList.remove('show');
         charModalMode = null;
     }
 
@@ -3573,7 +3632,8 @@ function viewerSaveAll() {
         if (inp) inp.addEventListener('keydown', e => { if (e.key === 'Enter') confirmCharModal(); });
     });
     // also close charModal on overlay click
-    document.getElementById('charModal').addEventListener('click', e => { if (e.target.id === 'charModal') closeCharModal(); });
+    const _charModalEl = document.getElementById('charModal');
+    if (_charModalEl) _charModalEl.addEventListener('click', e => { if (e.target.id === 'charModal') closeCharModal(); });
 
     // ===== CHAPTER DRAG REORDER =====
     function addChapDragReorder(handle, chapDiv, projId, chapId) {
@@ -3640,30 +3700,36 @@ function viewerSaveAll() {
 
     function toggleSearchPanel() {
         const panel = document.getElementById('searchPanel');
+        if (!panel) return;
         if (panel.classList.contains('open')) { closeSearchPanel(); return; }
         // 대사 패널 열려있으면 닫기
         closeDialoguePanel();
         panel.classList.add('open');
         const input = document.getElementById('searchInput');
-        input.value = '';
-        input.focus();
-        document.getElementById('searchResults').innerHTML = '<div class="search-empty">검색어를 입력하세요</div>';
-        document.getElementById('searchCount').textContent = '';
+        if (input) { input.value = ''; input.focus(); }
+        const results = document.getElementById('searchResults');
+        if (results) results.innerHTML = '<div class="search-empty">검색어를 입력하세요</div>';
+        const count = document.getElementById('searchCount');
+        if (count) count.textContent = '';
     }
 
     function closeSearchPanel() {
-        document.getElementById('searchPanel').classList.remove('open');
+        const el = document.getElementById('searchPanel');
+        if (el) el.classList.remove('open');
     }
 
-    document.getElementById('searchInput').addEventListener('input', () => {
+    const _searchInputEl = document.getElementById('searchInput');
+    if (_searchInputEl) _searchInputEl.addEventListener('input', () => {
         clearTimeout(_searchDebounce);
         _searchDebounce = setTimeout(performSearch, 200);
     });
 
     function performSearch() {
-        const query = document.getElementById('searchInput').value.trim().toLowerCase();
+        const inputEl = document.getElementById('searchInput');
         const container = document.getElementById('searchResults');
         const countEl = document.getElementById('searchCount');
+        if (!inputEl || !container || !countEl) return;
+        const query = inputEl.value.trim().toLowerCase();
 
         if (!query) {
             container.innerHTML = '<div class="search-empty">검색어를 입력하세요</div>';
@@ -3813,6 +3879,7 @@ function viewerSaveAll() {
     // ===== DIALOGUE LIST PANEL =====
     function toggleDialoguePanel() {
         const panel = document.getElementById('dialoguePanel');
+        if (!panel) return;
         if (panel.classList.contains('open')) { closeDialoguePanel(); return; }
         // 검색 패널 열려있으면 닫기
         closeSearchPanel();
@@ -3821,12 +3888,14 @@ function viewerSaveAll() {
     }
 
     function closeDialoguePanel() {
-        document.getElementById('dialoguePanel').classList.remove('open');
+        const el = document.getElementById('dialoguePanel');
+        if (el) el.classList.remove('open');
     }
 
     function renderDialogueList() {
         const container = document.getElementById('dlgList');
         const countEl = document.getElementById('dlgCount');
+        if (!container || !countEl) return;
         const proj = appData.projects.find(p => p.id === activeProjId);
         const chars = (proj && proj.characters) ? proj.characters : [];
 
