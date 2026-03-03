@@ -382,17 +382,13 @@
     .char-select:focus { border-color: var(--theme-primary); }
 
     /* Responsive dialogue item header */
-    .dynitem-header {
-        display: flex; flex-wrap: wrap; gap: 3px;
+    .dynitem-bar {
+        display: flex; flex-wrap: wrap; gap: 3px 5px;
         align-items: center; margin-bottom: 3px;
     }
-    .dynitem-label-row {
-        display: flex; align-items: center; gap: 4px;
-        flex-wrap: wrap; flex-shrink: 1; min-width: 0;
-    }
-    .dynitem-label-row > label { flex-shrink: 0; }
+    .dynitem-bar > label { flex-shrink: 0; margin: 0; }
     .dynitem-checks {
-        display: flex; align-items: center; gap: 6px; flex-wrap: wrap; flex-shrink: 1;
+        display: flex; align-items: center; gap: 5px; flex-shrink: 1;
     }
     .dynitem-check-label {
         display: inline-flex; align-items: center; gap: 3px;
@@ -404,6 +400,13 @@
         display: flex; align-items: center; gap: 4px;
         margin-left: auto; flex-shrink: 0;
     }
+    .dynitem-del {
+        padding: 1px 5px; font-size: 0.68em; border-radius: 3px;
+        border: none; cursor: pointer; color: white; font-weight: 700;
+        background: var(--accent); font-family: inherit; line-height: 1.3;
+        transition: background 0.15s; flex-shrink: 0;
+    }
+    .dynitem-del:hover { background: #c0392b; }
 
     /* ===== MAIN CONTENT ===== */
     #main-content { flex-grow: 1; height: 100vh; overflow-y: auto; overflow-x: hidden; position: relative; display: flex; flex-direction: column; }
@@ -673,20 +676,21 @@
     @keyframes pageFlash { 0% { outline-color: var(--theme-primary); } 100% { outline-color: transparent; } }
 
     .panel.type-open { border-color: #ced4da; border-style: dashed; }
-    .panel.type-open .cut-badge { background: #ced4da; color: #555; }
     .panel.type-flashback { background: #efefef; border: 2px solid #adb5bd; }
     .panel.type-emphasis { border-color: var(--accent); border-width: 2px; }
 
     /* Type badge (top-left) */
     .cut-badge {
-        position: absolute; top: 0; left: 0;
+        position: absolute; top: 3px; left: 3px;
         background: #1a1a1a; color: #ffffff;
-        padding: 2px 8px; font-size: 0.64em;
-        border-bottom-right-radius: 0;
+        padding: 1px 6px; font-size: 0.58em;
+        border-radius: 3px;
         display: none; z-index: 5; font-weight: 700; letter-spacing: 0.3px;
+        line-height: 1.4;
     }
     .panel.type-emphasis .cut-badge { background: var(--accent); }
     .panel.type-flashback .cut-badge { background: var(--theme-primary); }
+    .panel.type-open .cut-badge { background: #6b7280; }
 
     /* Sequential cut number (bottom-right) */
     .cut-seq-badge {
@@ -718,7 +722,7 @@
 
     /* Panel body */
     .panel-body {
-        padding: 12px 9px 9px; flex-grow: 1;
+        padding: 8px 7px 6px; flex-grow: 1;
         overflow-y: auto; overflow-x: hidden;
         display: flex; flex-direction: column; background: inherit; cursor: default;
     }
@@ -752,40 +756,46 @@
 
     .dynamic-list { display: flex; flex-direction: column; gap: 5px; min-height: 4px; }
     .dynamic-item {
-        display: flex; align-items: flex-start; gap: 4px;
+        display: flex; flex-direction: column; gap: 2px;
         background: white; border: 1px solid var(--border);
-        padding: 6px; border-radius: 5px; cursor: grab; transition: box-shadow 0.15s;
+        padding: 5px 7px; border-radius: 5px; cursor: grab; transition: box-shadow 0.15s;
     }
     .dynamic-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
     .dynamic-item.dragging { opacity: 0.35; }
-    .drag-handle { color: #ced4da; font-size: 1em; padding-top: 5px; cursor: grab; user-select: none; }
+    .drag-handle { color: #ced4da; font-size: 0.82em; cursor: grab; user-select: none; flex-shrink: 0; }
+    .dynamic-item textarea { width: 100%; box-sizing: border-box; }
     .color-picker { width: 20px; height: 20px; padding: 0; border: none; border-radius: 3px; cursor: pointer; background: transparent; flex-shrink: 0; }
     .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
     .color-picker::-webkit-color-swatch { border: 1px solid var(--border); border-radius: 3px; }
 
     /* View mode */
-    .view-mode { display: none; flex-direction: column; justify-content: flex-start; align-items: center; gap: 5px; text-align: center; }
-    .panel.has-badge .view-mode { padding-top: 14px; }
+    .view-mode { display: none; flex-direction: column; justify-content: flex-start; align-items: stretch; gap: 3px; text-align: left; }
+    .panel.has-badge .view-mode { padding-top: 16px; }
+    .panel.has-badge .edit-mode { padding-top: 16px; }
     .view-item {
-        width: 94%; padding: 6px 9px; border-radius: 5px;
-        font-size: 0.8em; word-break: break-word; box-sizing: border-box;
-        border: 1px solid; line-height: 1.55;
+        width: 100%; padding: 2px 7px 2px 8px; border-radius: 0;
+        font-size: 0.72em; word-break: break-word; box-sizing: border-box;
+        border: none; border-left: 2.5px solid; line-height: 1.45;
     }
-    .view-scene { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-    .view-action { background: #fefce8; border-color: #fde68a; color: #854d0e; }
+    .view-scene { border-left-color: #34d399; color: #14532d; }
+    .view-action { border-left-color: #fbbf24; color: #713f12; }
     .view-dialogue, .view-sfx { cursor: pointer; transition: filter 0.15s; }
-    .view-dialogue:hover, .view-sfx:hover { filter: brightness(0.94); }
-    .view-dialogue:active, .view-sfx:active { filter: brightness(0.85); }
-    .view-dialogue { border-color: #bfdbfe; text-align: left; background: #eff6ff; color: #1e40af; }
+    .view-dialogue:hover, .view-sfx:hover { filter: brightness(0.96); }
+    .view-dialogue:active, .view-sfx:active { filter: brightness(0.90); }
+    .view-dialogue { border-left-color: #60a5fa; color: #2c2c2c; text-align: left; border-radius: 0 3px 3px 0; }
+    .view-dialogue-hl {
+        background: rgba(0,0,0,0.06); padding: 1px 2px; border-radius: 2px;
+        box-decoration-break: clone; -webkit-box-decoration-break: clone;
+    }
     .view-char-name {
-        display: block; font-size: 0.68em; font-weight: 700;
-        margin-bottom: 2px; line-height: 1.2; opacity: 0.85;
+        display: block; font-size: 0.85em; font-weight: 700;
+        margin-bottom: 1px; line-height: 1.2; opacity: 0.8;
         font-style: normal; text-decoration: none; font-variant: normal;
     }
-    .view-sfx { border-color: #fecaca; font-weight: 700; text-align: center; background: #fff1f2; color: #7f1d1d; }
-    .view-notes { background: #faf5ff; border-color: #e9d5ff; color: #6b21a8; font-size: 0.74em; padding: 4px 8px; font-style: italic; }
-    .view-divider { width: 90%; min-height: 1px; background: var(--border); margin: 2px 0; flex-shrink: 0; }
-    .view-empty { color: var(--text-muted); font-size: 0.78em; font-style: italic; border-color: var(--border); background: var(--surface); }
+    .view-sfx { border-left-color: #f87171; border-left-width: 5px; font-weight: 700; text-align: left; color: #7f1d1d; }
+    .view-notes { border-left-color: #c084fc; color: #581c87; font-size: 0.67em; padding: 2px 7px 2px 8px; font-style: italic; margin-top: 3px; }
+    .view-divider { width: 100%; min-height: 1px; background: var(--border); margin: 3px 0; flex-shrink: 0; opacity: 0.6; }
+    .view-empty { color: var(--text-muted); font-size: 0.7em; font-style: italic; border-left-color: var(--border); }
 
     /* ===== PAGE FOOTER ===== */
     .page-footer {
@@ -1159,7 +1169,7 @@
             <!-- 오른쪽: 사이드바 이미지 + 응원 메시지 -->
             <div class="settings-col">
                 <div class="setting-section-title">🖼 사이드바 이미지</div>
-                <div class="setting-warn" style="margin-bottom:4px;">여백이 거의 없는 배경 투명화 파일을 추천드립니다.</div>
+                <div class="setting-warn" style="margin-bottom:4px;">배경 투명화 PNG 파일을 추천드립니다.</div>
                 <!-- 이미지 미리보기 + 컨트롤 가로 2단 -->
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                     <div class="sbi-preview-wrap" id="sbiPreviewWrap" style="flex:0 0 auto;width:calc(50% - 5px);">
@@ -2703,21 +2713,17 @@
             : '';
 
         item.innerHTML = `
-            <div class="drag-handle">☰</div>
-            <div style="flex-grow:1;display:flex;flex-direction:column;min-width:0;">
-                <div class="dynitem-header">
-                    <div class="dynitem-label-row">
-                        <label style="margin:0;">${type==='dialogue'?'대사':'효과음'}</label>
-                        ${checksUI}
-                    </div>
-                    <div class="dynitem-controls">
-                        ${charSelectUI}
-                        <input type="color" class="color-picker" value="${colorVal}">
-                    </div>
+            <div class="dynitem-bar">
+                <span class="drag-handle">☰</span>
+                <label>${type==='dialogue'?'대사':'효과음'}</label>
+                ${checksUI}
+                <div class="dynitem-controls">
+                    ${charSelectUI}
+                    <input type="color" class="color-picker" value="${colorVal}">
+                    <button class="dynitem-del" onclick="this.closest('.dynamic-item').remove()">✕</button>
                 </div>
-                <textarea placeholder="${type==='dialogue'?'대사 입력':'효과음 입력'}"></textarea>
             </div>
-            <button class="action-btn delete-btn" style="margin-top:14px;font-size:0.68em;padding:2px 5px;" onclick="this.closest('.dynamic-item').remove()">X</button>`;
+            <textarea placeholder="${type==='dialogue'?'대사 입력':'효과음 입력'}"></textarea>`;
 
         if (defaultText) item.querySelector('textarea').value = defaultText;
         if (type === 'dialogue') {
@@ -2783,6 +2789,26 @@
         return `rgb(${nr},${ng},${nb})`;
     }
 
+    // 대사 형광펜 배경: 매우 밝은 색은 채도를 증폭하여 색조 보존, 어두운 색은 투명도 낮춤
+    function dialogueHighlightBg(hexColor) {
+        const { r, g, b } = parseHexRGB(hexColor);
+        const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+        if (lum > 0.82) {
+            // 매우 밝은 색: 흰색 성분을 제거하고 색조만 증폭
+            const minC = Math.min(r, g, b);
+            const base = 120, scale = 4.5;
+            const dr = Math.min(255, base + (r - minC) * scale);
+            const dg = Math.min(255, base + (g - minC) * scale);
+            const db = Math.min(255, base + (b - minC) * scale);
+            return `rgba(${dr},${dg},${db},0.25)`;
+        }
+        const alpha = lum > 0.6  ? 0.25
+                    : lum > 0.4  ? 0.18
+                    : lum > 0.2  ? 0.13
+                    :               0.09;
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
+
     // 패널 엘리먼트 직접 저장 (인물 정보 자동 갱신용)
     function savePanelEl(panel) {
         const btn = panel.querySelector('.save-btn');
@@ -2803,7 +2829,6 @@
         let dynHTML = '';
         editMode.querySelector('.dynamic-list').querySelectorAll('.dynamic-item').forEach(item => {
             const type = item.getAttribute('data-type'), val = item.querySelector('textarea').value.trim(), color = item.querySelector('.color-picker').value;
-            const tc = getContrastYIQ(color);
             if (val) {
                 const esc = escapeAttr(val);
                 if (type==='dialogue') {
@@ -2816,11 +2841,13 @@
                     let body = formatPanelText(val);
                     if (isThought) body = '（' + body + '）';
                     else if (!isNarr) body = '&ldquo;' + body + '&rdquo;';
-                    const opacityStyle = isThought ? 'opacity:0.7;' : '';
+                    const opacityStyle = isThought ? 'opacity:0.65;' : '';
                     const italicStyle  = (isNarr || isThought) ? 'font-style:italic;' : '';
-                    dynHTML += `<div class="view-item view-dialogue copyable" style="background:${color};color:${tc};${italicStyle}${opacityStyle}" onclick="copyText(this)" data-raw-text="${esc}">${nameLabel}${body}</div>`;
+                    const hlBg = dialogueHighlightBg(color);
+                    const bodySpan = `<span class="view-dialogue-hl" style="background:${hlBg};">${body}</span>`;
+                    dynHTML += `<div class="view-item view-dialogue copyable" style="border-left-color:${color};${italicStyle}${opacityStyle}" onclick="copyText(this)" data-raw-text="${esc}">${nameLabel}${bodySpan}</div>`;
                 } else if (type==='sfx') {
-                    dynHTML += `<div class="view-item view-sfx copyable" style="background:${color};color:${tc};" onclick="copyText(this)" data-raw-text="${esc}">${formatPanelText(val)}</div>`;
+                    dynHTML += `<div class="view-item view-sfx copyable" style="border-left-color:${color};" onclick="copyText(this)" data-raw-text="${esc}">${formatPanelText(val)}</div>`;
                 }
             }
         });
