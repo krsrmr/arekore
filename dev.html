@@ -1146,9 +1146,8 @@
     .sce-view-cut-badge.type-open { background: #059669; }
     .sce-view-cut-badge.type-flashback { background: #7c3aed; }
     .sce-view-cut-badge.type-emphasis { background: var(--accent); }
-    .sce-view-scene, .sce-view-action {
-        font-weight: 700; color: var(--text-main); margin: 2px 0;
-    }
+    .sce-view-scene { font-weight: 700; color: #14532d; margin: 2px 0; }
+    .sce-view-action { font-weight: 700; color: #713f12; margin: 2px 0; }
     .sce-view-notes {
         font-size: 0.85em; color: var(--text-muted); font-style: italic; margin: 2px 0;
     }
@@ -1184,25 +1183,26 @@
     .sce-panel.editing .sce-panel-hover-bar { display: none; }
     .sce-panel.editing {
         background: #fafbfc; border: 1px solid var(--border);
-        border-radius: 8px; padding: 12px; margin: 4px 0;
+        border-radius: 8px; padding: 14px 16px; margin: 4px 0;
     }
 
     .sce-edit-header {
-        display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+        display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+        flex-wrap: wrap;
     }
     .sce-edit-header .sce-panel-num {
-        font-weight: 700; font-size: 0.75em; color: #fff; background: var(--theme-primary);
-        padding: 2px 8px; border-radius: 4px; flex-shrink: 0;
+        font-weight: 700; font-size: 0.78em; color: #fff; background: var(--theme-primary);
+        padding: 3px 10px; border-radius: 4px; flex-shrink: 0; white-space: nowrap;
     }
     .sce-panel-type-select {
-        padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
-        font-size: 0.78em; background: #fff; color: var(--text-main); cursor: pointer;
+        padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border);
+        font-size: 0.82em; background: #fff; color: var(--text-main); cursor: pointer;
     }
     .sce-edit-save-btn {
-        margin-left: auto; padding: 3px 14px; border-radius: 5px;
+        margin-left: auto; padding: 5px 18px; border-radius: 5px;
         border: 1px solid var(--theme-primary); background: var(--theme-primary);
-        color: #fff; font-size: 0.75em; font-weight: 700; cursor: pointer;
-        transition: all 0.15s;
+        color: #fff; font-size: 0.8em; font-weight: 700; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap;
     }
     .sce-edit-save-btn:hover { opacity: 0.85; }
 
@@ -1231,18 +1231,18 @@
     .sce-dyn-item[data-type="dialogue"] { border-left: 3px solid #3b82f6; }
     .sce-dyn-item[data-type="sfx"] { border-left: 3px solid #ef4444; }
     .sce-dyn-bar {
-        display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
     .sce-dyn-label {
-        font-size: 0.7em; font-weight: 700; padding: 1px 6px;
-        border-radius: 3px; flex-shrink: 0;
+        font-size: 0.74em; font-weight: 700; padding: 2px 8px;
+        border-radius: 3px; flex-shrink: 0; white-space: nowrap;
     }
     .sce-dyn-label.dlg-type-dialogue { background: #eff6ff; color: #1e40af; }
     .sce-dyn-label.dlg-type-sfx { background: #fff1f2; color: #7f1d1d; }
     .sce-dyn-checks { display: flex; gap: 8px; }
     .sce-dyn-checks label {
-        font-size: 0.72em; color: var(--text-muted); display: flex; align-items: center; gap: 3px;
-        cursor: pointer; font-weight: 500;
+        font-size: 0.78em; color: var(--text-muted); display: flex; align-items: center; gap: 3px;
+        cursor: pointer; font-weight: 500; white-space: nowrap;
     }
     .sce-dyn-char-select {
         padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);
@@ -1252,10 +1252,16 @@
         width: 22px; height: 22px; border: 1px solid var(--border);
         border-radius: 4px; cursor: pointer; padding: 0;
     }
+    .sce-dyn-drag-handle {
+        color: #ced4da; cursor: grab; font-size: 0.8em; user-select: none;
+        padding: 0 2px; flex-shrink: 0;
+    }
+    .sce-dyn-drag-handle:active { cursor: grabbing; }
+    .sce-dyn-item.sce-dyn-dragging { opacity: 0.35; }
     .sce-dyn-del {
-        padding: 1px 6px; border-radius: 4px; border: 1px solid transparent;
-        background: none; font-size: 0.8em; cursor: pointer; color: var(--text-muted);
-        transition: all 0.15s; margin-left: auto;
+        padding: 2px 8px; border-radius: 4px; border: 1px solid transparent;
+        background: none; font-size: 0.82em; cursor: pointer; color: var(--text-muted);
+        transition: all 0.15s; margin-left: auto; flex-shrink: 0;
     }
     .sce-dyn-del:hover { color: var(--accent); border-color: var(--accent); }
     .sce-dyn-item textarea {
@@ -1266,9 +1272,9 @@
     .sce-dyn-item textarea:focus { outline: none; border-color: var(--theme-primary); }
     .sce-dyn-add-btns { display: flex; gap: 6px; margin-top: 2px; }
     .sce-dyn-add-btns button {
-        padding: 4px 12px; border-radius: 5px; border: 1px dashed var(--border);
-        background: #fff; font-size: 0.78em; cursor: pointer; color: var(--text-muted);
-        font-weight: 600; transition: all 0.15s;
+        padding: 5px 14px; border-radius: 5px; border: 1px dashed var(--border);
+        background: #fff; font-size: 0.8em; cursor: pointer; color: var(--text-muted);
+        font-weight: 600; transition: all 0.15s; white-space: nowrap;
     }
     .sce-dyn-add-btns button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
 
@@ -4297,6 +4303,8 @@ function viewerSaveAll() {
 
         // 드래그 정렬 초기화
         initScenarioDrag();
+        // 대사/효과음 드래그 초기화
+        body.querySelectorAll('.sce-dyn-item').forEach(item => initScenarioDynDrag(item));
     }
 
     // 각본 형식 뷰 렌더링
@@ -4393,8 +4401,9 @@ function viewerSaveAll() {
     function renderScenarioDynItem(item, pageIdx, panelIdx, dynIdx, chars) {
         const isDlg = item.type === 'dialogue';
         const colorVal = item.color || (isDlg ? '#eff6ff' : '#fff1f2');
-        let html = `<div class="sce-dyn-item" data-type="${item.type}">`;
+        let html = `<div class="sce-dyn-item" data-type="${item.type}" draggable="true">`;
         html += `<div class="sce-dyn-bar">`;
+        html += `<span class="sce-dyn-drag-handle">☰</span>`;
         html += `<span class="sce-dyn-label ${isDlg ? 'dlg-type-dialogue' : 'dlg-type-sfx'}">${isDlg ? '대사' : '효과음'}</span>`;
 
         if (isDlg) {
@@ -4497,6 +4506,7 @@ function viewerSaveAll() {
         const wrapper = document.createElement('div');
         wrapper.className = 'sce-dyn-item';
         wrapper.setAttribute('data-type', type);
+        wrapper.setAttribute('draggable', 'true');
 
         let checksHtml = '';
         let charHtml = '';
@@ -4510,6 +4520,7 @@ function viewerSaveAll() {
 
         wrapper.innerHTML = `
             <div class="sce-dyn-bar">
+                <span class="sce-dyn-drag-handle">☰</span>
                 <span class="sce-dyn-label ${isDlg ? 'dlg-type-dialogue' : 'dlg-type-sfx'}">${isDlg ? '대사' : '효과음'}</span>
                 ${checksHtml}
                 ${charHtml}
@@ -4517,6 +4528,8 @@ function viewerSaveAll() {
                 <button class="sce-dyn-del" onclick="scenarioDeleteDynItem(this)">✕</button>
             </div>
             <textarea placeholder="${isDlg ? '대사 입력' : '효과음 입력'}"></textarea>`;
+
+        initScenarioDynDrag(wrapper);
 
         dynList.appendChild(wrapper);
         // 인물 선택 초기화
@@ -4527,18 +4540,56 @@ function viewerSaveAll() {
         if (ta) setTimeout(() => ta.focus(), 30);
     }
 
-    // 드래그 정렬 시스템
+    // 대사/효과음 드래그 정렬
+    function initScenarioDynDrag(item) {
+        item.addEventListener('mousedown', (e) => {
+            item._dynDragFromHandle = !!e.target.closest('.sce-dyn-drag-handle');
+        });
+        item.addEventListener('dragstart', (e) => {
+            if (!item._dynDragFromHandle) { e.preventDefault(); return; }
+            item.classList.add('sce-dyn-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', '');
+        });
+        item.addEventListener('dragend', () => {
+            item.classList.remove('sce-dyn-dragging');
+        });
+    }
+
+    // 글로벌: sce-dyn-list 내 드래그 정렬
+    document.addEventListener('dragover', e => {
+        const list = e.target.closest('.sce-dyn-list');
+        if (!list) return;
+        const dragging = document.querySelector('.sce-dyn-dragging');
+        if (!dragging) return;
+        e.preventDefault();
+        const after = getSceDynAfterElement(list, e.clientY);
+        if (after == null) list.appendChild(dragging);
+        else list.insertBefore(dragging, after);
+    });
+
+    function getSceDynAfterElement(container, y) {
+        return [...container.querySelectorAll('.sce-dyn-item:not(.sce-dyn-dragging)')].reduce((closest, child) => {
+            const box = child.getBoundingClientRect(), offset = y - box.top - box.height / 2;
+            return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // 패널 드래그 정렬 시스템
     function initScenarioDrag() {
         const body = document.getElementById('sceBody');
         if (!body) return;
         let draggedPanel = null;
 
         body.querySelectorAll('.sce-panel').forEach(panel => {
+            // mousedown에서 핸들 여부 플래그 세팅
+            panel.addEventListener('mousedown', (e) => {
+                panel._dragFromHandle = !!e.target.closest('.sce-panel-drag-handle');
+            });
+
             panel.addEventListener('dragstart', (e) => {
-                // 편집 모드에서는 드래그 비활성
                 if (panel.classList.contains('editing')) { e.preventDefault(); return; }
-                // 드래그 핸들에서만 시작 허용
-                if (!e.target.classList.contains('sce-panel-drag-handle')) { e.preventDefault(); return; }
+                if (!panel._dragFromHandle) { e.preventDefault(); return; }
                 draggedPanel = panel;
                 panel.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
