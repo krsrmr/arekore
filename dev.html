@@ -1035,6 +1035,168 @@
     @media (max-width: 600px) {
         #searchPanel, #dialoguePanel { width: 100vw; }
     }
+
+    /* ===== SCENARIO EDITOR ===== */
+    #scenarioEditor {
+        display: none; flex-direction: column; flex: 1;
+        overflow: hidden; background: var(--surface);
+    }
+    #scenarioEditor.active { display: flex; }
+    .sce-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border);
+        flex-shrink: 0; gap: 12px;
+    }
+    .sce-header-title {
+        font-weight: 700; font-size: 1em; color: var(--text-main);
+        display: flex; align-items: center; gap: 6px;
+    }
+    .sce-header-actions { display: flex; gap: 8px; }
+    .sce-add-page-btn {
+        padding: 5px 14px; border-radius: 6px; border: 1px dashed var(--border);
+        background: #fff; color: var(--text-muted); font-size: 0.82em; cursor: pointer;
+        font-weight: 600; transition: all 0.15s;
+    }
+    .sce-add-page-btn:hover { border-color: var(--accent); color: var(--accent); background: #fff5f5; }
+    .sce-body {
+        flex: 1; overflow-y: auto; padding: 16px 20px;
+        display: flex; flex-direction: column; gap: 16px;
+    }
+    .sce-body::-webkit-scrollbar { width: 5px; }
+    .sce-body::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+
+    /* Page block */
+    .sce-page {
+        background: #fff; border-radius: 10px; border: 1px solid var(--border);
+        overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .sce-page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+        cursor: pointer; user-select: none; gap: 8px;
+    }
+    .sce-page-header:hover { background: #edf0f3; }
+    .sce-page-title {
+        font-weight: 700; font-size: 0.88em; color: var(--text-main);
+        display: flex; align-items: center; gap: 6px;
+    }
+    .sce-page-title .sce-fold-icon { font-size: 0.75em; color: var(--text-muted); transition: transform 0.2s; }
+    .sce-page.folded .sce-fold-icon { transform: rotate(-90deg); }
+    .sce-page.folded .sce-page-body { display: none; }
+    .sce-page-actions { display: flex; gap: 6px; align-items: center; }
+    .sce-page-actions button {
+        padding: 3px 10px; border-radius: 5px; border: 1px solid var(--border);
+        background: #fff; font-size: 0.75em; cursor: pointer; color: var(--text-muted);
+        font-weight: 600; transition: all 0.15s;
+    }
+    .sce-page-actions button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+    .sce-page-actions .sce-del-page-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sce-page-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .sce-page-empty {
+        text-align: center; color: var(--text-muted); font-size: 0.82em;
+        padding: 20px; font-style: italic;
+    }
+
+    /* Panel/Cut card */
+    .sce-panel {
+        border: 1px solid var(--border); border-radius: 8px; background: #fff;
+        overflow: hidden; transition: box-shadow 0.15s;
+    }
+    .sce-panel:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .sce-panel-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 12px; background: #fafbfc; border-bottom: 1px solid var(--border);
+        gap: 8px;
+    }
+    .sce-panel-num {
+        font-weight: 700; font-size: 0.75em; color: #fff; background: var(--theme-primary);
+        padding: 2px 8px; border-radius: 4px; flex-shrink: 0;
+    }
+    .sce-panel-type-select {
+        padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
+        font-size: 0.78em; background: #fff; color: var(--text-main); cursor: pointer;
+    }
+    .sce-panel-actions { display: flex; gap: 4px; margin-left: auto; }
+    .sce-panel-actions button {
+        padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border);
+        background: #fff; font-size: 0.72em; cursor: pointer; color: var(--text-muted);
+        transition: all 0.15s; line-height: 1.4;
+    }
+    .sce-panel-actions button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+    .sce-panel-actions .sce-del-panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sce-panel-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* Panel form fields */
+    .sce-field { display: flex; flex-direction: column; gap: 3px; }
+    .sce-field label {
+        font-size: 0.7em; font-weight: 700; color: var(--text-muted);
+        text-transform: uppercase; letter-spacing: 0.3px;
+    }
+    .sce-field textarea, .sce-field input[type="text"] {
+        padding: 6px 10px; border-radius: 5px; border: 1px solid var(--border);
+        font-size: 0.85em; font-family: inherit; resize: vertical;
+        line-height: 1.5; color: var(--text-main); transition: border-color 0.15s;
+    }
+    .sce-field textarea:focus, .sce-field input[type="text"]:focus {
+        outline: none; border-color: var(--theme-primary);
+    }
+    .sce-field textarea { min-height: 36px; }
+
+    /* Dynamic items in scenario */
+    .sce-dyn-list { display: flex; flex-direction: column; gap: 6px; }
+    .sce-dyn-item {
+        display: flex; flex-direction: column; gap: 4px;
+        padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+        background: #fafbfc; position: relative;
+    }
+    .sce-dyn-item[data-type="dialogue"] { border-left: 3px solid #3b82f6; }
+    .sce-dyn-item[data-type="sfx"] { border-left: 3px solid #ef4444; }
+    .sce-dyn-bar {
+        display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .sce-dyn-label {
+        font-size: 0.7em; font-weight: 700; padding: 1px 6px;
+        border-radius: 3px; flex-shrink: 0;
+    }
+    .sce-dyn-label.dlg-type-dialogue { background: #eff6ff; color: #1e40af; }
+    .sce-dyn-label.dlg-type-sfx { background: #fff1f2; color: #7f1d1d; }
+    .sce-dyn-checks { display: flex; gap: 8px; }
+    .sce-dyn-checks label {
+        font-size: 0.72em; color: var(--text-muted); display: flex; align-items: center; gap: 3px;
+        cursor: pointer; font-weight: 500; text-transform: none; letter-spacing: 0;
+    }
+    .sce-dyn-char-select {
+        padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);
+        font-size: 0.75em; background: #fff; cursor: pointer;
+    }
+    .sce-dyn-color {
+        width: 22px; height: 22px; border: 1px solid var(--border);
+        border-radius: 4px; cursor: pointer; padding: 0;
+    }
+    .sce-dyn-del {
+        padding: 1px 6px; border-radius: 4px; border: 1px solid transparent;
+        background: none; font-size: 0.8em; cursor: pointer; color: var(--text-muted);
+        transition: all 0.15s; margin-left: auto;
+    }
+    .sce-dyn-del:hover { color: var(--accent); border-color: var(--accent); }
+    .sce-dyn-item textarea {
+        padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border);
+        font-size: 0.85em; font-family: inherit; resize: vertical;
+        min-height: 32px; line-height: 1.5; color: var(--text-main);
+    }
+    .sce-dyn-item textarea:focus { outline: none; border-color: var(--theme-primary); }
+    .sce-dyn-add-btns { display: flex; gap: 6px; margin-top: 2px; }
+    .sce-dyn-add-btns button {
+        padding: 4px 12px; border-radius: 5px; border: 1px dashed var(--border);
+        background: #fff; font-size: 0.78em; cursor: pointer; color: var(--text-muted);
+        font-weight: 600; transition: all 0.15s;
+    }
+    .sce-dyn-add-btns button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+
+    @media (max-width: 600px) {
+        .sce-body { padding: 10px; }
+        .sce-panel-body { padding: 8px; }
+    }
 </style>
 </head>
 <body>
@@ -1072,6 +1234,7 @@
                     <span id="current-chapter-title"></span>
                 </h2>
                 <button class="toolbar-save-btn" onclick="saveAllPanels()" title="Ctrl+S">💾 전체 저장</button>
+                <button class="toolbar-save-btn" id="modeToggleBtn" onclick="toggleEditorMode()" title="모드 전환">📝 시나리오</button>
                 <button class="toolbar-save-btn" onclick="toggleDialoguePanel()" title="대사 목록">💬 대사</button>
                 <button class="toolbar-save-btn" onclick="toggleSearchPanel()" title="Ctrl+F 검색">🔍 검색</button>
                 <button class="toggle-menu-btn" id="toggleMenuBtn">도구 ▾</button>
@@ -1138,6 +1301,15 @@
             </div>
         </div>
         <div id="workspace"></div>
+        <div id="scenarioEditor">
+            <div class="sce-header">
+                <div class="sce-header-title">📝 시나리오 에디터</div>
+                <div class="sce-header-actions">
+                    <button class="sce-add-page-btn" onclick="scenarioAddPage()">＋ 쪽 추가</button>
+                </div>
+            </div>
+            <div class="sce-body" id="sceBody"></div>
+        </div>
     </main>
 </div>
 
@@ -1904,6 +2076,12 @@
         // ── 입력창 포커스 중엔 이하 단축키 비활성 ───────────────────
         if (inInput) return;
 
+        // 시나리오 모드에서는 콘티 전용 단축키 비활성
+        if (currentEditorMode === 'scenario') {
+            if (e.key === 'Escape') { toggleEditorMode(); return; }
+            return;
+        }
+
         // Escape
         if (e.key === 'Escape') {
             // 검색/대사 패널 닫기
@@ -1964,6 +2142,11 @@
 
     // ===== AUTOSAVE =====
     function getSerializedData() {
+        // 시나리오 모드에서는 먼저 데이터를 pagesArray에 동기화
+        if (currentEditorMode === 'scenario') {
+            scenarioReadFromDOM();
+            syncScenarioToPages();
+        }
         const curProj = appData.projects.find(p => p.id === activeProjId);
         const curChap = curProj ? curProj.chapters.find(c => c.id === activeChapId) : null;
         if (curChap) {
@@ -2170,6 +2353,16 @@
         const fpSel = document.getElementById('firstPageSelect');
         if (bindSel) bindSel.value = proj.binding || chap.binding;
         if (fpSel) fpSel.value = chap.firstPageMode;
+        // 시나리오 모드였으면 콘티 모드로 복귀
+        if (currentEditorMode === 'scenario') {
+            currentEditorMode = 'conti';
+            document.getElementById('scenarioEditor').classList.remove('active');
+            document.getElementById('workspace').style.display = '';
+            const modeBtn = document.getElementById('modeToggleBtn');
+            if (modeBtn) { modeBtn.innerHTML = '📝 시나리오'; modeBtn.title = '시나리오 모드로 전환'; }
+            const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+            if (toggleMenuBtn) toggleMenuBtn.style.display = '';
+        }
         updateMainTitle(); renderSidebar(); updatePageScale(); renderPages();
     }
 
@@ -3062,6 +3255,10 @@
 
     // ===== EXPORT VIEWER =====
     function exportViewerHTML() {
+        // 시나리오 모드에서 내보내기 시 먼저 콘티 모드로 전환
+        if (currentEditorMode === 'scenario') {
+            switchToContiMode();
+        }
         const chkComm = document.getElementById('chkCommentary');
         const chkEdit = document.getElementById('chkEditMode');
         const withCommentary = chkComm ? chkComm.checked : false;
@@ -3082,7 +3279,7 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
 
-        ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel'].forEach(sel => {
+        ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel','#scenarioEditor'].forEach(sel => {
             const el = doc.querySelector(sel); if (el) el.remove();
         });
         if (!withEditMode) {
@@ -3901,6 +4098,380 @@ function viewerSaveAll() {
                 lastActivePage = wrapper;
             }
         }, 150);
+    }
+
+    // ===== SCENARIO EDITOR MODE =====
+    let currentEditorMode = 'conti'; // 'conti' | 'scenario'
+    let scenarioData = []; // [{panels: [panelData, ...]}, ...]
+
+    function toggleEditorMode() {
+        if (currentEditorMode === 'conti') {
+            switchToScenarioMode();
+        } else {
+            switchToContiMode();
+        }
+    }
+
+    function switchToScenarioMode() {
+        // 현재 콘티 데이터를 저장
+        saveAllPanels();
+        scenarioData = collectScenarioData();
+        currentEditorMode = 'scenario';
+
+        // UI 전환
+        document.getElementById('workspace').style.display = 'none';
+        document.getElementById('scenarioEditor').classList.add('active');
+        const btn = document.getElementById('modeToggleBtn');
+        btn.innerHTML = '🎬 콘티';
+        btn.title = '콘티 모드로 전환';
+
+        // 콘티 전용 툴바 숨김
+        const topMenu = document.getElementById('topMenu');
+        if (topMenu) topMenu.style.display = 'none';
+        const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+        if (toggleMenuBtn) toggleMenuBtn.style.display = 'none';
+
+        // 대사/검색 패널 닫기
+        closeDialoguePanel();
+        closeSearchPanel();
+
+        renderScenarioEditor();
+
+        // 시나리오 에디터에서 입력 시 auto-save 트리거
+        const sceEditor = document.getElementById('scenarioEditor');
+        sceEditor.oninput = function() { scheduleAutoSave(); };
+    }
+
+    function switchToContiMode() {
+        // 시나리오 데이터를 DOM에서 읽기
+        scenarioReadFromDOM();
+        takeSnapshot();
+        applyScenarioToConti();
+        currentEditorMode = 'conti';
+
+        // UI 전환
+        document.getElementById('scenarioEditor').classList.remove('active');
+        document.getElementById('workspace').style.display = '';
+        const btn = document.getElementById('modeToggleBtn');
+        btn.innerHTML = '📝 시나리오';
+        btn.title = '시나리오 모드로 전환';
+
+        // 콘티 전용 툴바 복원
+        const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+        if (toggleMenuBtn) toggleMenuBtn.style.display = '';
+        // topMenu는 toggleMenuBtn 클릭으로 토글되므로 닫힌 상태 유지
+
+        scheduleAutoSave();
+    }
+
+    function collectScenarioData() {
+        const data = [];
+        pagesArray.forEach(wrapper => {
+            const panels = [];
+            wrapper.querySelectorAll('.panel').forEach(panel => {
+                panels.push(serializePanelData(panel));
+            });
+            data.push({ panels });
+        });
+        return data;
+    }
+
+    function renderScenarioEditor() {
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        let html = '';
+
+        scenarioData.forEach((page, pageIdx) => {
+            html += `<div class="sce-page" data-page-idx="${pageIdx}">`;
+            html += `<div class="sce-page-header" onclick="scenarioTogglePage(this)">`;
+            html += `<div class="sce-page-title"><span class="sce-fold-icon">▼</span> ${pageIdx + 1}쪽</div>`;
+            html += `<div class="sce-page-actions">`;
+            html += `<button onclick="event.stopPropagation(); scenarioAddPanel(${pageIdx})">＋ 컷</button>`;
+            html += `<button class="sce-del-page-btn" onclick="event.stopPropagation(); scenarioDeletePage(${pageIdx})">쪽 삭제</button>`;
+            html += `</div></div>`;
+            html += `<div class="sce-page-body">`;
+
+            if (page.panels.length === 0) {
+                html += `<div class="sce-page-empty">컷이 없습니다. ＋ 컷 버튼으로 추가하세요.</div>`;
+            } else {
+                page.panels.forEach((pd, panelIdx) => {
+                    html += renderScenarioPanel(pd, pageIdx, panelIdx, chars);
+                });
+            }
+
+            html += `</div></div>`;
+        });
+
+        if (scenarioData.length === 0) {
+            html = '<div class="sce-page-empty">페이지가 없습니다. ＋ 쪽 추가 버튼으로 추가하세요.</div>';
+        }
+
+        body.innerHTML = html;
+
+        // 인물 선택 드롭다운 초기화
+        body.querySelectorAll('.sce-dyn-char-select').forEach(sel => {
+            scenarioPopulateCharSelect(sel);
+        });
+    }
+
+    function renderScenarioPanel(pd, pageIdx, panelIdx, chars) {
+        let html = `<div class="sce-panel" data-page-idx="${pageIdx}" data-panel-idx="${panelIdx}">`;
+        html += `<div class="sce-panel-header">`;
+        html += `<span class="sce-panel-num">컷 ${panelIdx + 1}</span>`;
+        html += `<select class="sce-panel-type-select">`;
+        html += `<option value=""${!pd.type ? ' selected' : ''}>일반 컷</option>`;
+        html += `<option value="열린 컷"${pd.type === '열린 컷' ? ' selected' : ''}>열린 컷</option>`;
+        html += `<option value="회상 컷"${pd.type === '회상 컷' ? ' selected' : ''}>회상 컷</option>`;
+        html += `<option value="강조 컷"${pd.type === '강조 컷' ? ' selected' : ''}>강조 컷</option>`;
+        html += `</select>`;
+        html += `<div class="sce-panel-actions">`;
+        html += `<button onclick="scenarioMovePanel(${pageIdx},${panelIdx},-1)" title="위로 이동">▲</button>`;
+        html += `<button onclick="scenarioMovePanel(${pageIdx},${panelIdx},1)" title="아래로 이동">▼</button>`;
+        html += `<button class="sce-del-panel-btn" onclick="scenarioDeletePanel(${pageIdx},${panelIdx})">삭제</button>`;
+        html += `</div></div>`;
+
+        html += `<div class="sce-panel-body">`;
+        html += `<div class="sce-field"><label>장면 (배경/상황)</label><textarea class="sce-input-scene" rows="2">${escapeHtml(pd.scene || '')}</textarea></div>`;
+        html += `<div class="sce-field"><label>인물의 행동</label><textarea class="sce-input-action" rows="2">${escapeHtml(pd.action || '')}</textarea></div>`;
+
+        // Dynamic items
+        html += `<div class="sce-dyn-list">`;
+        (pd.dynamicItems || []).forEach((item, dynIdx) => {
+            html += renderScenarioDynItem(item, pageIdx, panelIdx, dynIdx, chars);
+        });
+        html += `</div>`;
+
+        html += `<div class="sce-dyn-add-btns">`;
+        html += `<button onclick="scenarioAddDynItem(${pageIdx},${panelIdx},'dialogue')">＋ 대사</button>`;
+        html += `<button onclick="scenarioAddDynItem(${pageIdx},${panelIdx},'sfx')">＋ 효과음</button>`;
+        html += `</div>`;
+
+        html += `<div class="sce-field"><label>특이사항</label><input type="text" class="sce-input-notes" value="${escapeHtml(pd.notes || '')}"></div>`;
+        html += `</div></div>`;
+        return html;
+    }
+
+    function renderScenarioDynItem(item, pageIdx, panelIdx, dynIdx, chars) {
+        const isDlg = item.type === 'dialogue';
+        const colorVal = item.color || (isDlg ? '#eff6ff' : '#fff1f2');
+        let html = `<div class="sce-dyn-item" data-type="${item.type}">`;
+        html += `<div class="sce-dyn-bar">`;
+        html += `<span class="sce-dyn-label ${isDlg ? 'dlg-type-dialogue' : 'dlg-type-sfx'}">${isDlg ? '대사' : '효과음'}</span>`;
+
+        if (isDlg) {
+            html += `<div class="sce-dyn-checks">`;
+            html += `<label><input type="checkbox" class="sce-is-narration"${item.isNarration ? ' checked' : ''}> 나레이션</label>`;
+            html += `<label><input type="checkbox" class="sce-is-thought"${item.isThought ? ' checked' : ''}> 생각</label>`;
+            html += `</div>`;
+            html += `<select class="sce-dyn-char-select" data-char-id="${item.charId || ''}"></select>`;
+        }
+
+        html += `<input type="color" class="sce-dyn-color" value="${colorVal}">`;
+        html += `<button class="sce-dyn-del" onclick="scenarioDeleteDynItem(this)">✕</button>`;
+        html += `</div>`;
+        html += `<textarea placeholder="${isDlg ? '대사 입력' : '효과음 입력'}">${escapeHtml(item.text || '')}</textarea>`;
+        html += `</div>`;
+        return html;
+    }
+
+    function scenarioPopulateCharSelect(sel) {
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        const savedId = sel.getAttribute('data-char-id') || '';
+        let options = '<option value="">인물 선택</option>';
+        chars.forEach(c => {
+            const selected = (c.id === savedId) ? ' selected' : '';
+            options += `<option value="${c.id}"${selected}>${escapeHtml(c.name)}</option>`;
+        });
+        sel.innerHTML = options;
+        if (savedId) sel.value = savedId;
+        // 변경 시 data-char-id 업데이트
+        sel.onchange = function() {
+            this.setAttribute('data-char-id', this.value);
+            // 캐릭터 색상 자동 적용
+            const ch = chars.find(c => c.id === this.value);
+            if (ch) {
+                const colorInput = this.closest('.sce-dyn-item')?.querySelector('.sce-dyn-color');
+                if (colorInput) colorInput.value = ch.color;
+            }
+        };
+    }
+
+    function scenarioTogglePage(headerEl) {
+        const page = headerEl.closest('.sce-page');
+        if (page) page.classList.toggle('folded');
+    }
+
+    // ---- 시나리오 DOM에서 데이터 수집 ----
+    function scenarioReadFromDOM() {
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        const prevData = JSON.parse(JSON.stringify(scenarioData)); // 이전 데이터 백업 (위치 정보 보존용)
+        scenarioData = [];
+        body.querySelectorAll('.sce-page').forEach(pageEl => {
+            const panels = [];
+            pageEl.querySelectorAll('.sce-panel').forEach(panelEl => {
+                const origPageIdx = parseInt(panelEl.getAttribute('data-page-idx'));
+                const origPanelIdx = parseInt(panelEl.getAttribute('data-panel-idx'));
+                // 기존 위치 정보 복원
+                let origPd = null;
+                if (prevData[origPageIdx] && prevData[origPageIdx].panels[origPanelIdx]) {
+                    origPd = prevData[origPageIdx].panels[origPanelIdx];
+                }
+
+                const pd = {
+                    top: origPd?.top || '', left: origPd?.left || '',
+                    width: origPd?.width || '', height: origPd?.height || '',
+                    type: panelEl.querySelector('.sce-panel-type-select')?.value || '',
+                    scene: panelEl.querySelector('.sce-input-scene')?.value || '',
+                    action: panelEl.querySelector('.sce-input-action')?.value || '',
+                    notes: panelEl.querySelector('.sce-input-notes')?.value || '',
+                    isSaved: true,
+                    dynamicItems: []
+                };
+
+                panelEl.querySelectorAll('.sce-dyn-item').forEach(dynEl => {
+                    const dtype = dynEl.getAttribute('data-type');
+                    const di = {
+                        type: dtype,
+                        text: dynEl.querySelector('textarea')?.value || '',
+                        color: dynEl.querySelector('.sce-dyn-color')?.value || '',
+                        isNarration: dynEl.querySelector('.sce-is-narration')?.checked || false,
+                        isThought: dynEl.querySelector('.sce-is-thought')?.checked || false,
+                        charId: dynEl.querySelector('.sce-dyn-char-select')?.getAttribute('data-char-id') || ''
+                    };
+                    pd.dynamicItems.push(di);
+                });
+
+                panels.push(pd);
+            });
+            scenarioData.push({ panels });
+        });
+    }
+
+    // ---- 시나리오 → 콘티 적용 ----
+    function applyScenarioToConti() {
+        syncScenarioToPages();
+        renderPages();
+        updateCutNumbers();
+    }
+
+    // ---- 시나리오 편집 함수들 ----
+    function scenarioAddPage() {
+        scenarioReadFromDOM();
+        scenarioData.push({ panels: [] });
+        renderScenarioEditor();
+        // 새 페이지로 스크롤
+        const body = document.getElementById('sceBody');
+        if (body) setTimeout(() => body.scrollTop = body.scrollHeight, 50);
+    }
+
+    function scenarioDeletePage(pageIdx) {
+        if (!confirm(`${pageIdx + 1}쪽을 삭제하시겠습니까?\n해당 쪽의 모든 컷 내용이 함께 삭제됩니다.`)) return;
+        scenarioReadFromDOM();
+        scenarioData.splice(pageIdx, 1);
+        renderScenarioEditor();
+    }
+
+    function scenarioAddPanel(pageIdx) {
+        scenarioReadFromDOM();
+        if (!scenarioData[pageIdx]) return;
+        scenarioData[pageIdx].panels.push({
+            top: '', left: '', width: '', height: '',
+            type: '', scene: '', action: '', notes: '',
+            isSaved: false, dynamicItems: []
+        });
+        renderScenarioEditor();
+        // 해당 페이지 펼치기
+        const pageEl = document.querySelector(`.sce-page[data-page-idx="${pageIdx}"]`);
+        if (pageEl) pageEl.classList.remove('folded');
+    }
+
+    function scenarioDeletePanel(pageIdx, panelIdx) {
+        scenarioReadFromDOM();
+        if (!scenarioData[pageIdx]) return;
+        scenarioData[pageIdx].panels.splice(panelIdx, 1);
+        renderScenarioEditor();
+    }
+
+    function scenarioMovePanel(pageIdx, panelIdx, dir) {
+        scenarioReadFromDOM();
+        const page = scenarioData[pageIdx];
+        if (!page) return;
+        const newIdx = panelIdx + dir;
+
+        if (newIdx >= 0 && newIdx < page.panels.length) {
+            // 같은 페이지 내 이동
+            const temp = page.panels[panelIdx];
+            page.panels[panelIdx] = page.panels[newIdx];
+            page.panels[newIdx] = temp;
+        } else if (dir === -1 && pageIdx > 0) {
+            // 이전 페이지의 마지막으로 이동
+            const panel = page.panels.splice(panelIdx, 1)[0];
+            scenarioData[pageIdx - 1].panels.push(panel);
+        } else if (dir === 1 && pageIdx < scenarioData.length - 1) {
+            // 다음 페이지의 처음으로 이동
+            const panel = page.panels.splice(panelIdx, 1)[0];
+            scenarioData[pageIdx + 1].panels.unshift(panel);
+        } else {
+            return; // 이동 불가
+        }
+        renderScenarioEditor();
+    }
+
+    function scenarioAddDynItem(pageIdx, panelIdx, type) {
+        scenarioReadFromDOM();
+        if (!scenarioData[pageIdx] || !scenarioData[pageIdx].panels[panelIdx]) return;
+        scenarioData[pageIdx].panels[panelIdx].dynamicItems.push({
+            type: type,
+            text: '',
+            color: type === 'dialogue' ? '#eff6ff' : '#fff1f2',
+            isNarration: false,
+            isThought: false,
+            charId: ''
+        });
+        renderScenarioEditor();
+        // 해당 패널의 마지막 textarea에 포커스
+        setTimeout(() => {
+            const panels = document.querySelectorAll(`.sce-panel[data-page-idx="${pageIdx}"][data-panel-idx="${panelIdx}"]`);
+            if (panels.length) {
+                const textareas = panels[0].querySelectorAll('.sce-dyn-item textarea');
+                if (textareas.length) textareas[textareas.length - 1].focus();
+            }
+        }, 50);
+    }
+
+    function scenarioDeleteDynItem(btn) {
+        const dynItem = btn.closest('.sce-dyn-item');
+        if (dynItem) dynItem.remove();
+    }
+
+    // 시나리오 데이터를 pagesArray DOM에 조용히 동기화 (UI 전환 없이)
+    function syncScenarioToPages() {
+        while (pagesArray.length < scenarioData.length) {
+            pagesArray.push(createPageElement());
+        }
+        while (pagesArray.length > scenarioData.length) {
+            pagesArray.pop();
+        }
+        scenarioData.forEach((page, pageIdx) => {
+            const wrapper = pagesArray[pageIdx];
+            const container = wrapper.querySelector('.panel-container');
+            container.querySelectorAll('.panel').forEach(p => p.remove());
+            page.panels.forEach((pd, panelIdx) => {
+                if (!pd.top && !pd.left) {
+                    const offset = (panelIdx * 18) % 80;
+                    pd.top = (10 + offset) + 'px';
+                    pd.left = (10 + offset) + 'px';
+                }
+                if (!pd.width) pd.width = '';
+                if (!pd.height) pd.height = '';
+                const np = deserializePanelData(pd, 0);
+                container.appendChild(np);
+            });
+        });
     }
 
     // ===== DIALOGUE LIST PANEL =====
