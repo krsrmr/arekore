@@ -1039,76 +1039,158 @@
     /* ===== SCENARIO EDITOR ===== */
     #scenarioEditor {
         display: none; flex-direction: column; flex: 1;
-        overflow: hidden; background: var(--surface);
+        overflow: hidden; background: #fff;
     }
     #scenarioEditor.active { display: flex; }
     .sce-header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border);
+        padding: 10px 24px; background: #fff; border-bottom: 1px solid var(--border);
         flex-shrink: 0; gap: 12px;
     }
     .sce-header-title {
-        font-weight: 700; font-size: 1em; color: var(--text-main);
+        font-weight: 700; font-size: 0.95em; color: var(--text-main);
         display: flex; align-items: center; gap: 6px;
     }
     .sce-header-actions { display: flex; gap: 8px; }
     .sce-add-page-btn {
-        padding: 5px 14px; border-radius: 6px; border: 1px dashed var(--border);
-        background: #fff; color: var(--text-muted); font-size: 0.82em; cursor: pointer;
+        padding: 4px 12px; border-radius: 5px; border: 1px dashed var(--border);
+        background: #fff; color: var(--text-muted); font-size: 0.78em; cursor: pointer;
         font-weight: 600; transition: all 0.15s;
     }
     .sce-add-page-btn:hover { border-color: var(--accent); color: var(--accent); background: #fff5f5; }
     .sce-body {
-        flex: 1; overflow-y: auto; padding: 16px 20px;
-        display: flex; flex-direction: column; gap: 16px;
+        flex: 1; overflow-y: auto; padding: 32px 48px;
+        display: flex; flex-direction: column; gap: 0;
+        max-width: 800px; margin: 0 auto; width: 100%;
     }
     .sce-body::-webkit-scrollbar { width: 5px; }
     .sce-body::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
 
     /* Page block */
-    .sce-page {
-        background: #fff; border-radius: 10px; border: 1px solid var(--border);
-        overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }
+    .sce-page { margin-bottom: 0; }
     .sce-page-header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border);
-        cursor: pointer; user-select: none; gap: 8px;
+        padding: 12px 0 8px; cursor: pointer; user-select: none; gap: 8px;
+        border-bottom: 2px solid var(--text-main); margin-bottom: 16px;
     }
-    .sce-page-header:hover { background: #edf0f3; }
     .sce-page-title {
-        font-weight: 700; font-size: 0.88em; color: var(--text-main);
+        font-weight: 900; font-size: 0.82em; color: var(--text-main);
         display: flex; align-items: center; gap: 6px;
+        letter-spacing: 0.5px; text-transform: uppercase;
     }
-    .sce-page-title .sce-fold-icon { font-size: 0.75em; color: var(--text-muted); transition: transform 0.2s; }
+    .sce-page-title .sce-fold-icon {
+        font-size: 0.7em; color: var(--text-muted); transition: transform 0.2s;
+    }
     .sce-page.folded .sce-fold-icon { transform: rotate(-90deg); }
     .sce-page.folded .sce-page-body { display: none; }
-    .sce-page-actions { display: flex; gap: 6px; align-items: center; }
+    .sce-page-actions {
+        display: flex; gap: 6px; align-items: center;
+        opacity: 0; transition: opacity 0.15s;
+    }
+    .sce-page-header:hover .sce-page-actions { opacity: 1; }
     .sce-page-actions button {
-        padding: 3px 10px; border-radius: 5px; border: 1px solid var(--border);
-        background: #fff; font-size: 0.75em; cursor: pointer; color: var(--text-muted);
+        padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+        background: #fff; font-size: 0.7em; cursor: pointer; color: var(--text-muted);
         font-weight: 600; transition: all 0.15s;
     }
     .sce-page-actions button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
     .sce-page-actions .sce-del-page-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .sce-page-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .sce-page-body {
+        padding: 0 0 24px; display: flex; flex-direction: column; gap: 0;
+    }
     .sce-page-empty {
-        text-align: center; color: var(--text-muted); font-size: 0.82em;
-        padding: 20px; font-style: italic;
+        text-align: center; color: var(--text-muted); font-size: 0.85em;
+        padding: 24px 0; font-style: italic;
     }
 
-    /* Panel/Cut card */
+    /* ---- Panel/Cut: VIEW MODE (screenplay style) ---- */
     .sce-panel {
-        border: 1px solid var(--border); border-radius: 8px; background: #fff;
-        overflow: hidden; transition: box-shadow 0.15s;
+        position: relative; padding: 0 0 4px;
+        transition: background 0.15s;
+        border-radius: 4px;
     }
-    .sce-panel:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .sce-panel-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 8px 12px; background: #fafbfc; border-bottom: 1px solid var(--border);
-        gap: 8px;
+    .sce-panel.dragging { opacity: 0.4; }
+    .sce-panel.drag-over-top { box-shadow: 0 -2px 0 0 var(--accent) inset; }
+    .sce-panel.drag-over-bottom { box-shadow: 0 2px 0 0 var(--accent) inset; }
+
+    /* Hover overlay */
+    .sce-panel-hover-bar {
+        position: absolute; top: 0; right: 0;
+        display: flex; gap: 4px; padding: 4px 6px;
+        opacity: 0; transition: opacity 0.15s; z-index: 5;
+        pointer-events: none;
     }
-    .sce-panel-num {
+    .sce-panel:hover .sce-panel-hover-bar { opacity: 1; pointer-events: auto; }
+    .sce-panel:hover { background: rgba(0,0,0,0.015); }
+    .sce-panel-hover-bar button {
+        padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+        background: #fff; font-size: 0.7em; cursor: pointer; color: var(--text-muted);
+        font-weight: 600; transition: all 0.12s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .sce-panel-hover-bar button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+    .sce-panel-hover-bar .sce-del-panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sce-panel-drag-handle {
+        cursor: grab; padding: 2px 5px; font-size: 0.75em; color: var(--text-muted);
+        border: 1px solid var(--border); border-radius: 4px; background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .sce-panel-drag-handle:active { cursor: grabbing; }
+
+    /* View content */
+    .sce-view { line-height: 1.85; font-size: 0.92em; }
+    .sce-view-cut-badge {
+        display: inline-block; font-size: 0.68em; font-weight: 700;
+        padding: 1px 7px; border-radius: 3px; margin-bottom: 4px;
+        background: var(--theme-primary); color: #fff; letter-spacing: 0.3px;
+    }
+    .sce-view-cut-badge.type-open { background: #059669; }
+    .sce-view-cut-badge.type-flashback { background: #7c3aed; }
+    .sce-view-cut-badge.type-emphasis { background: var(--accent); }
+    .sce-view-scene, .sce-view-action {
+        font-weight: 700; color: var(--text-main); margin: 2px 0;
+    }
+    .sce-view-notes {
+        font-size: 0.85em; color: var(--text-muted); font-style: italic; margin: 2px 0;
+    }
+    .sce-view-dialogue-row {
+        display: flex; gap: 0; margin: 1px 0; padding-left: 24px;
+        align-items: baseline;
+    }
+    .sce-view-char-name {
+        font-weight: 700; min-width: 56px; flex-shrink: 0;
+        text-align: left; padding-right: 12px; font-size: 0.92em;
+    }
+    .sce-view-dlg-text { flex: 1; }
+    .sce-view-dlg-text.narration { font-style: italic; color: var(--text-muted); }
+    .sce-view-dlg-text.thought { font-style: italic; opacity: 0.7; }
+    .sce-view-dlg-hl {
+        padding: 0 3px; border-radius: 2px;
+    }
+    .sce-view-sfx-row {
+        display: flex; gap: 0; margin: 1px 0; padding-left: 24px;
+        align-items: baseline;
+    }
+    .sce-view-sfx-label {
+        font-weight: 700; min-width: 56px; flex-shrink: 0;
+        text-align: left; padding-right: 12px; font-size: 0.82em;
+        color: #9f1239;
+    }
+    .sce-view-sfx-text { flex: 1; font-weight: 600; color: #9f1239; }
+
+    /* ---- Panel/Cut: EDIT MODE ---- */
+    .sce-edit { display: none; flex-direction: column; gap: 8px; padding: 8px 0; }
+    .sce-panel.editing .sce-view { display: none; }
+    .sce-panel.editing .sce-edit { display: flex; }
+    .sce-panel.editing .sce-panel-hover-bar { display: none; }
+    .sce-panel.editing {
+        background: #fafbfc; border: 1px solid var(--border);
+        border-radius: 8px; padding: 12px; margin: 4px 0;
+    }
+
+    .sce-edit-header {
+        display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
+    .sce-edit-header .sce-panel-num {
         font-weight: 700; font-size: 0.75em; color: #fff; background: var(--theme-primary);
         padding: 2px 8px; border-radius: 4px; flex-shrink: 0;
     }
@@ -1116,21 +1198,18 @@
         padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border);
         font-size: 0.78em; background: #fff; color: var(--text-main); cursor: pointer;
     }
-    .sce-panel-actions { display: flex; gap: 4px; margin-left: auto; }
-    .sce-panel-actions button {
-        padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border);
-        background: #fff; font-size: 0.72em; cursor: pointer; color: var(--text-muted);
-        transition: all 0.15s; line-height: 1.4;
+    .sce-edit-save-btn {
+        margin-left: auto; padding: 3px 14px; border-radius: 5px;
+        border: 1px solid var(--theme-primary); background: var(--theme-primary);
+        color: #fff; font-size: 0.75em; font-weight: 700; cursor: pointer;
+        transition: all 0.15s;
     }
-    .sce-panel-actions button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
-    .sce-panel-actions .sce-del-panel-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .sce-panel-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .sce-edit-save-btn:hover { opacity: 0.85; }
 
-    /* Panel form fields */
     .sce-field { display: flex; flex-direction: column; gap: 3px; }
     .sce-field label {
         font-size: 0.7em; font-weight: 700; color: var(--text-muted);
-        text-transform: uppercase; letter-spacing: 0.3px;
+        letter-spacing: 0.3px;
     }
     .sce-field textarea, .sce-field input[type="text"] {
         padding: 6px 10px; border-radius: 5px; border: 1px solid var(--border);
@@ -1142,12 +1221,12 @@
     }
     .sce-field textarea { min-height: 36px; }
 
-    /* Dynamic items in scenario */
+    /* Dynamic items in edit mode */
     .sce-dyn-list { display: flex; flex-direction: column; gap: 6px; }
     .sce-dyn-item {
         display: flex; flex-direction: column; gap: 4px;
         padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
-        background: #fafbfc; position: relative;
+        background: #fff; position: relative;
     }
     .sce-dyn-item[data-type="dialogue"] { border-left: 3px solid #3b82f6; }
     .sce-dyn-item[data-type="sfx"] { border-left: 3px solid #ef4444; }
@@ -1163,7 +1242,7 @@
     .sce-dyn-checks { display: flex; gap: 8px; }
     .sce-dyn-checks label {
         font-size: 0.72em; color: var(--text-muted); display: flex; align-items: center; gap: 3px;
-        cursor: pointer; font-weight: 500; text-transform: none; letter-spacing: 0;
+        cursor: pointer; font-weight: 500;
     }
     .sce-dyn-char-select {
         padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);
@@ -1194,8 +1273,9 @@
     .sce-dyn-add-btns button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
 
     @media (max-width: 600px) {
-        .sce-body { padding: 10px; }
-        .sce-panel-body { padding: 8px; }
+        .sce-body { padding: 16px; }
+        .sce-view-dialogue-row, .sce-view-sfx-row { padding-left: 8px; }
+        .sce-view-char-name { min-width: 40px; }
     }
 </style>
 </head>
@@ -4214,11 +4294,71 @@ function viewerSaveAll() {
         body.querySelectorAll('.sce-dyn-char-select').forEach(sel => {
             scenarioPopulateCharSelect(sel);
         });
+
+        // 드래그 정렬 초기화
+        initScenarioDrag();
+    }
+
+    // 각본 형식 뷰 렌더링
+    function renderScenarioPanelView(pd, panelIdx, chars) {
+        let html = '';
+        // 컷 종류 뱃지
+        if (pd.type) {
+            const cls = pd.type === '열린 컷' ? ' type-open' : pd.type === '회상 컷' ? ' type-flashback' : pd.type === '강조 컷' ? ' type-emphasis' : '';
+            html += `<div class="sce-view-cut-badge${cls}">${escapeHtml(pd.type)}</div> `;
+        }
+        // 장면
+        if (pd.scene) html += `<div class="sce-view-scene">${formatPanelText(pd.scene)}</div>`;
+        // 행동
+        if (pd.action) html += `<div class="sce-view-action">${formatPanelText(pd.action)}</div>`;
+        // 대사/효과음
+        (pd.dynamicItems || []).forEach(item => {
+            if (!item.text) return;
+            if (item.type === 'dialogue') {
+                const ch = chars.find(c => c.id === item.charId);
+                const nameLabel = ch ? escapeHtml(ch.name) : '';
+                const nameStyle = ch ? ` style="color:${charNameColor(ch.color)}"` : '';
+                let body = formatPanelText(item.text);
+                const hlBg = dialogueHighlightBg(item.color || '#eff6ff');
+                if (item.isThought) body = '（' + body + '）';
+                else if (!item.isNarration) body = '\u201C' + body + '\u201D';
+                const textCls = item.isNarration ? ' narration' : item.isThought ? ' thought' : '';
+                html += `<div class="sce-view-dialogue-row">`;
+                html += `<span class="sce-view-char-name"${nameStyle}>${nameLabel}</span>`;
+                html += `<span class="sce-view-dlg-text${textCls}"><span class="sce-view-dlg-hl" style="background:${hlBg}">${body}</span></span>`;
+                html += `</div>`;
+            } else if (item.type === 'sfx') {
+                html += `<div class="sce-view-sfx-row">`;
+                html += `<span class="sce-view-sfx-label">효과음</span>`;
+                html += `<span class="sce-view-sfx-text">${formatPanelText(item.text)}</span>`;
+                html += `</div>`;
+            }
+        });
+        // 특이사항
+        if (pd.notes) html += `<div class="sce-view-notes">* ${formatPanelText(pd.notes)}</div>`;
+        // 내용 없음
+        if (!html) html = `<div class="sce-view-notes" style="opacity:0.4">빈 컷</div>`;
+        return html;
     }
 
     function renderScenarioPanel(pd, pageIdx, panelIdx, chars) {
-        let html = `<div class="sce-panel" data-page-idx="${pageIdx}" data-panel-idx="${panelIdx}">`;
-        html += `<div class="sce-panel-header">`;
+        let html = `<div class="sce-panel" data-page-idx="${pageIdx}" data-panel-idx="${panelIdx}" draggable="true">`;
+
+        // 호버 시 표시되는 액션바
+        html += `<div class="sce-panel-hover-bar">`;
+        html += `<span class="sce-panel-drag-handle" title="드래그로 이동">☰</span>`;
+        html += `<button onclick="scenarioEditPanel(this)">편집</button>`;
+        html += `<button class="sce-del-panel-btn" onclick="scenarioDeletePanel(${pageIdx},${panelIdx})">삭제</button>`;
+        html += `</div>`;
+
+        // 뷰 모드 (각본 형식)
+        html += `<div class="sce-view">`;
+        html += renderScenarioPanelView(pd, panelIdx, chars);
+        html += `</div>`;
+
+        // 편집 모드 (폼)
+        html += `<div class="sce-edit">`;
+        html += `<div class="sce-edit-header">`;
         html += `<span class="sce-panel-num">컷 ${panelIdx + 1}</span>`;
         html += `<select class="sce-panel-type-select">`;
         html += `<option value=""${!pd.type ? ' selected' : ''}>일반 컷</option>`;
@@ -4226,17 +4366,12 @@ function viewerSaveAll() {
         html += `<option value="회상 컷"${pd.type === '회상 컷' ? ' selected' : ''}>회상 컷</option>`;
         html += `<option value="강조 컷"${pd.type === '강조 컷' ? ' selected' : ''}>강조 컷</option>`;
         html += `</select>`;
-        html += `<div class="sce-panel-actions">`;
-        html += `<button onclick="scenarioMovePanel(${pageIdx},${panelIdx},-1)" title="위로 이동">▲</button>`;
-        html += `<button onclick="scenarioMovePanel(${pageIdx},${panelIdx},1)" title="아래로 이동">▼</button>`;
-        html += `<button class="sce-del-panel-btn" onclick="scenarioDeletePanel(${pageIdx},${panelIdx})">삭제</button>`;
-        html += `</div></div>`;
+        html += `<button class="sce-edit-save-btn" onclick="scenarioSavePanel(this)">저장</button>`;
+        html += `</div>`;
 
-        html += `<div class="sce-panel-body">`;
         html += `<div class="sce-field"><label>장면 (배경/상황)</label><textarea class="sce-input-scene" rows="2">${escapeHtml(pd.scene || '')}</textarea></div>`;
         html += `<div class="sce-field"><label>인물의 행동</label><textarea class="sce-input-action" rows="2">${escapeHtml(pd.action || '')}</textarea></div>`;
 
-        // Dynamic items
         html += `<div class="sce-dyn-list">`;
         (pd.dynamicItems || []).forEach((item, dynIdx) => {
             html += renderScenarioDynItem(item, pageIdx, panelIdx, dynIdx, chars);
@@ -4244,12 +4379,14 @@ function viewerSaveAll() {
         html += `</div>`;
 
         html += `<div class="sce-dyn-add-btns">`;
-        html += `<button onclick="scenarioAddDynItem(${pageIdx},${panelIdx},'dialogue')">＋ 대사</button>`;
-        html += `<button onclick="scenarioAddDynItem(${pageIdx},${panelIdx},'sfx')">＋ 효과음</button>`;
+        html += `<button onclick="scenarioAddDynItemInline(this,'dialogue')">＋ 대사</button>`;
+        html += `<button onclick="scenarioAddDynItemInline(this,'sfx')">＋ 효과음</button>`;
         html += `</div>`;
 
         html += `<div class="sce-field"><label>특이사항</label><input type="text" class="sce-input-notes" value="${escapeHtml(pd.notes || '')}"></div>`;
-        html += `</div></div>`;
+        html += `</div>`;
+
+        html += `</div>`;
         return html;
     }
 
@@ -4287,16 +4424,181 @@ function viewerSaveAll() {
         });
         sel.innerHTML = options;
         if (savedId) sel.value = savedId;
-        // 변경 시 data-char-id 업데이트
         sel.onchange = function() {
             this.setAttribute('data-char-id', this.value);
-            // 캐릭터 색상 자동 적용
             const ch = chars.find(c => c.id === this.value);
             if (ch) {
                 const colorInput = this.closest('.sce-dyn-item')?.querySelector('.sce-dyn-color');
                 if (colorInput) colorInput.value = ch.color;
             }
         };
+    }
+
+    // 편집 모드 진입/저장
+    function scenarioEditPanel(btn) {
+        const panel = btn.closest('.sce-panel');
+        if (!panel) return;
+        // 다른 패널 편집 중이면 먼저 저장
+        document.querySelectorAll('.sce-panel.editing').forEach(p => {
+            if (p !== panel) scenarioSavePanelEl(p);
+        });
+        panel.classList.add('editing');
+        // 첫 번째 textarea에 포커스
+        const ta = panel.querySelector('.sce-edit textarea');
+        if (ta) setTimeout(() => ta.focus(), 50);
+    }
+
+    function scenarioSavePanel(btn) {
+        const panel = btn.closest('.sce-panel');
+        if (panel) scenarioSavePanelEl(panel);
+    }
+
+    function scenarioSavePanelEl(panelEl) {
+        if (!panelEl.classList.contains('editing')) return;
+        // DOM에서 현재 편집 데이터 읽기
+        const pd = scenarioReadPanelFromDOM(panelEl);
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        const panelIdx = parseInt(panelEl.getAttribute('data-panel-idx'));
+        // 뷰 갱신
+        const viewEl = panelEl.querySelector('.sce-view');
+        if (viewEl) viewEl.innerHTML = renderScenarioPanelView(pd, panelIdx, chars);
+        panelEl.classList.remove('editing');
+        scheduleAutoSave();
+    }
+
+    function scenarioReadPanelFromDOM(panelEl) {
+        return {
+            type: panelEl.querySelector('.sce-panel-type-select')?.value || '',
+            scene: panelEl.querySelector('.sce-input-scene')?.value || '',
+            action: panelEl.querySelector('.sce-input-action')?.value || '',
+            notes: panelEl.querySelector('.sce-input-notes')?.value || '',
+            isSaved: true,
+            dynamicItems: Array.from(panelEl.querySelectorAll('.sce-dyn-item')).map(dynEl => ({
+                type: dynEl.getAttribute('data-type'),
+                text: dynEl.querySelector('textarea')?.value || '',
+                color: dynEl.querySelector('.sce-dyn-color')?.value || '',
+                isNarration: dynEl.querySelector('.sce-is-narration')?.checked || false,
+                isThought: dynEl.querySelector('.sce-is-thought')?.checked || false,
+                charId: dynEl.querySelector('.sce-dyn-char-select')?.getAttribute('data-char-id') || ''
+            }))
+        };
+    }
+
+    // 편집 모드 내 대사/효과음 추가 (재렌더링 없이)
+    function scenarioAddDynItemInline(btn, type) {
+        const dynList = btn.closest('.sce-edit').querySelector('.sce-dyn-list');
+        if (!dynList) return;
+        const isDlg = type === 'dialogue';
+        const colorVal = isDlg ? '#eff6ff' : '#fff1f2';
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sce-dyn-item';
+        wrapper.setAttribute('data-type', type);
+
+        let checksHtml = '';
+        let charHtml = '';
+        if (isDlg) {
+            checksHtml = `<div class="sce-dyn-checks">
+                <label><input type="checkbox" class="sce-is-narration"> 나레이션</label>
+                <label><input type="checkbox" class="sce-is-thought"> 생각</label>
+            </div>`;
+            charHtml = `<select class="sce-dyn-char-select" data-char-id=""></select>`;
+        }
+
+        wrapper.innerHTML = `
+            <div class="sce-dyn-bar">
+                <span class="sce-dyn-label ${isDlg ? 'dlg-type-dialogue' : 'dlg-type-sfx'}">${isDlg ? '대사' : '효과음'}</span>
+                ${checksHtml}
+                ${charHtml}
+                <input type="color" class="sce-dyn-color" value="${colorVal}">
+                <button class="sce-dyn-del" onclick="scenarioDeleteDynItem(this)">✕</button>
+            </div>
+            <textarea placeholder="${isDlg ? '대사 입력' : '효과음 입력'}"></textarea>`;
+
+        dynList.appendChild(wrapper);
+        // 인물 선택 초기화
+        const sel = wrapper.querySelector('.sce-dyn-char-select');
+        if (sel) scenarioPopulateCharSelect(sel);
+        // 텍스트에 포커스
+        const ta = wrapper.querySelector('textarea');
+        if (ta) setTimeout(() => ta.focus(), 30);
+    }
+
+    // 드래그 정렬 시스템
+    function initScenarioDrag() {
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        let draggedPanel = null;
+
+        body.querySelectorAll('.sce-panel').forEach(panel => {
+            panel.addEventListener('dragstart', (e) => {
+                // 편집 모드에서는 드래그 비활성
+                if (panel.classList.contains('editing')) { e.preventDefault(); return; }
+                // 드래그 핸들에서만 시작 허용
+                if (!e.target.classList.contains('sce-panel-drag-handle')) { e.preventDefault(); return; }
+                draggedPanel = panel;
+                panel.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', '');
+            });
+
+            panel.addEventListener('dragend', () => {
+                panel.classList.remove('dragging');
+                body.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
+                    el.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+                draggedPanel = null;
+            });
+
+            panel.addEventListener('dragover', (e) => {
+                if (!draggedPanel || draggedPanel === panel) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const rect = panel.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                panel.classList.remove('drag-over-top', 'drag-over-bottom');
+                if (e.clientY < midY) {
+                    panel.classList.add('drag-over-top');
+                } else {
+                    panel.classList.add('drag-over-bottom');
+                }
+            });
+
+            panel.addEventListener('dragleave', () => {
+                panel.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+
+            panel.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (!draggedPanel || draggedPanel === panel) return;
+                panel.classList.remove('drag-over-top', 'drag-over-bottom');
+
+                // 먼저 현재 편집 데이터를 scenarioData에 저장
+                scenarioReadFromDOM();
+
+                const srcPage = parseInt(draggedPanel.getAttribute('data-page-idx'));
+                const srcPanel = parseInt(draggedPanel.getAttribute('data-panel-idx'));
+                const dstPage = parseInt(panel.getAttribute('data-page-idx'));
+                const dstPanel = parseInt(panel.getAttribute('data-panel-idx'));
+
+                // 이동할 패널 데이터 추출
+                const movedData = scenarioData[srcPage].panels.splice(srcPanel, 1)[0];
+
+                // 삽입 위치 계산
+                const rect = panel.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                let insertIdx = dstPanel;
+                // srcPage와 같은 페이지이고 src가 dst보다 앞에 있었으면 인덱스 보정
+                if (srcPage === dstPage && srcPanel < dstPanel) insertIdx--;
+                if (e.clientY >= midY) insertIdx++;
+
+                scenarioData[dstPage].panels.splice(insertIdx, 0, movedData);
+                renderScenarioEditor();
+            });
+        });
     }
 
     function scenarioTogglePage(headerEl) {
