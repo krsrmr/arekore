@@ -436,9 +436,10 @@
     }
     /* 상단바 우측 버튼 그룹: 절대 찌그러지지 않도록 */
     .toolbar-top .toolbar-save-btn,
+    .toolbar-top .mode-toggle-btn,
     .toolbar-top .toggle-menu-btn,
     .toolbar-top .kbd-hint { flex-shrink: 0; }
-    .toolbar-top .toggle-menu-btn { margin-left: auto; }
+    .toolbar-top .mode-toggle-btn { margin-left: auto; }
     .toolbar-save-btn {
         padding: 5px 11px; background: white; color: var(--text-muted);
         border: 1px solid var(--border); border-radius: 4px; font-size: 0.78em;
@@ -452,6 +453,13 @@
         padding: 6px 11px; font-size: 0.8em; border-radius: 5px; cursor: pointer; transition: opacity 0.2s; font-family: inherit;
     }
     .toggle-sidebar-btn:hover { opacity: 0.8; }
+    .mode-toggle-btn {
+        padding: 5px 11px; background: var(--theme-primary); color: #fff;
+        border: 1px solid var(--theme-primary); border-radius: 5px;
+        font-size: 0.78em; cursor: pointer; transition: all 0.15s;
+        font-weight: 700; font-family: inherit; white-space: nowrap; flex-shrink: 0;
+    }
+    .mode-toggle-btn:hover { opacity: 0.85; }
     .toggle-menu-btn {
         background: none; color: var(--text-muted); border: 1px solid var(--border);
         padding: 5px 10px; font-size: 0.78em; border-radius: 5px; cursor: pointer; transition: all 0.2s; font-family: inherit;
@@ -841,7 +849,7 @@
         .ctrl-btn, .insert-page-btn, .add-panel-btn {
             padding: 7px 12px; font-size: 0.8em; min-height: 36px;
         }
-        .toggle-sidebar-btn, .toggle-menu-btn, .toolbar-save-btn {
+        .toggle-sidebar-btn, .toggle-menu-btn, .toolbar-save-btn, .mode-toggle-btn {
             padding: 8px 14px; font-size: 0.82em; min-height: 36px;
         }
     }
@@ -1077,7 +1085,7 @@
     .sce-page-header {
         display: flex; align-items: center; justify-content: space-between;
         padding: 12px 0 8px; cursor: pointer; user-select: none; gap: 8px;
-        border-bottom: 2px solid var(--text-main); margin-bottom: 16px;
+        border-bottom: 2px solid #ced4da; margin-bottom: 16px;
     }
     .sce-page-title {
         font-weight: 900; font-size: 0.82em; color: var(--text-main);
@@ -1153,8 +1161,9 @@
     /* 컷 번호 구분 (체크 시) */
     .sce-panel-cut-num-badge {
         display: none; font-size: 0.68em; font-weight: 700;
-        padding: 1px 7px; border-radius: 3px; margin-bottom: 2px;
+        padding: 1px 7px; border-radius: 3px; margin-right: 4px;
         background: var(--theme-primary); color: #fff; letter-spacing: 0.3px;
+        vertical-align: middle;
     }
     .sce-body.show-cut-nums .sce-panel-cut-num-badge { display: inline-block; }
     .sce-body.show-cut-nums .sce-panel {
@@ -1166,6 +1175,7 @@
         display: inline-block; font-size: 0.68em; font-weight: 700;
         padding: 1px 7px; border-radius: 3px; margin-bottom: 4px;
         background: var(--theme-primary); color: #fff; letter-spacing: 0.3px;
+        vertical-align: middle;
     }
     .sce-view-cut-badge.type-open { background: #059669; }
     .sce-view-cut-badge.type-flashback { background: #7c3aed; }
@@ -1344,9 +1354,9 @@
                     <span id="current-chapter-title"></span>
                 </h2>
                 <button class="toolbar-save-btn" onclick="saveAllPanels()" title="Ctrl+S">💾 전체 저장</button>
-                <button class="toolbar-save-btn" id="modeToggleBtn" onclick="toggleEditorMode()" title="모드 전환">📝 시나리오</button>
                 <button class="toolbar-save-btn" onclick="toggleDialoguePanel()" title="대사 목록">💬 대사</button>
                 <button class="toolbar-save-btn" onclick="toggleSearchPanel()" title="Ctrl+F 검색">🔍 검색</button>
+                <button class="mode-toggle-btn" id="modeToggleBtn" onclick="toggleEditorMode()" title="모드 전환">📝 시나리오</button>
                 <button class="toggle-menu-btn" id="toggleMenuBtn">도구 ▾</button>
                 <span class="kbd-hint" onclick="toggleShortcuts()">⌨️ 단축키</span>
             </div>
@@ -1417,6 +1427,7 @@
                 <div class="sce-header-actions">
                     <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutNumCheck" onchange="toggleScenarioCutNumbers()"> 컷 번호</label>
                     <button class="sce-add-page-btn" onclick="scenarioAddPage()">＋ 쪽 추가</button>
+                    <button class="sce-add-page-btn" onclick="exportViewerHTML()" title="Ctrl+Shift+S">출력</button>
                 </div>
             </div>
             <div class="sce-body" id="sceBody"></div>
@@ -2493,6 +2504,8 @@
             if (modeBtn) { modeBtn.innerHTML = '📝 시나리오'; modeBtn.title = '시나리오 모드로 전환'; }
             const toggleMenuBtn = document.getElementById('toggleMenuBtn');
             if (toggleMenuBtn) toggleMenuBtn.style.display = '';
+            const topMenu = document.getElementById('topMenu');
+            if (topMenu) topMenu.style.display = '';
         }
         updateMainTitle(); renderSidebar(); updatePageScale(); renderPages();
     }
@@ -4290,7 +4303,8 @@ function viewerSaveAll() {
         // 콘티 전용 툴바 복원
         const toggleMenuBtn = document.getElementById('toggleMenuBtn');
         if (toggleMenuBtn) toggleMenuBtn.style.display = '';
-        // topMenu는 toggleMenuBtn 클릭으로 토글되므로 닫힌 상태 유지
+        const topMenu = document.getElementById('topMenu');
+        if (topMenu) topMenu.style.display = '';
 
         scheduleAutoSave();
     }
@@ -4360,6 +4374,8 @@ function viewerSaveAll() {
     // 각본 형식 뷰 렌더링
     function renderScenarioPanelView(pd, panelIdx, chars) {
         let html = '';
+        // 컷 번호 뱃지 (토글로 표시) — 컷 종류 뱃지와 일렬 배치
+        html += `<span class="sce-panel-cut-num-badge">컷 ${panelIdx + 1}</span>`;
         // 컷 종류 뱃지
         if (pd.type) {
             const cls = pd.type === '열린 컷' ? ' type-open' : pd.type === '회상 컷' ? ' type-flashback' : pd.type === '강조 컷' ? ' type-emphasis' : '';
@@ -4401,9 +4417,6 @@ function viewerSaveAll() {
 
     function renderScenarioPanel(pd, pageIdx, panelIdx, chars) {
         let html = `<div class="sce-panel" data-page-idx="${pageIdx}" data-panel-idx="${panelIdx}" draggable="true">`;
-
-        // 컷 번호 뱃지 (토글로 표시)
-        html += `<span class="sce-panel-cut-num-badge">컷 ${panelIdx + 1}</span>`;
 
         // 호버 시 표시되는 액션바
         html += `<div class="sce-panel-hover-bar">`;
