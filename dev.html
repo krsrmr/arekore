@@ -1423,7 +1423,7 @@
         <div id="workspace"></div>
         <div id="scenarioEditor">
             <div class="sce-header">
-                <div class="sce-header-title">📝 시나리오 에디터</div>
+                <div class="sce-header-title">📝 시나리오 모드</div>
                 <div class="sce-header-actions">
                     <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutNumCheck" onchange="toggleScenarioCutNumbers()"> 컷 번호</label>
                     <button class="sce-add-page-btn" onclick="scenarioAddPage()">＋ 쪽 추가</button>
@@ -4781,9 +4781,12 @@ function viewerSaveAll() {
         scenarioReadFromDOM();
         const proj = appData.projects.find(p => p.id === activeProjId);
         const chars = (proj && proj.characters) ? proj.characters : [];
+        const themePrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#1a2332';
         const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
         const chapName = chap ? chap.name : '시나리오';
         const pName = proj ? proj.name : '';
+
+        const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
 
         let body = '';
         scenarioData.forEach((page, pageIdx) => {
@@ -4791,7 +4794,7 @@ function viewerSaveAll() {
             body += `<div class="sce-page-header">${pageIdx + 1}쪽</div>`;
             page.panels.forEach((pd, panelIdx) => {
                 body += `<div class="sce-panel">`;
-                body += `<span class="sce-cut-num">컷 ${panelIdx + 1}</span> `;
+                if (showCutNums) body += `<span class="sce-cut-num">컷 ${panelIdx + 1}</span> `;
                 if (pd.type) {
                     const cls = pd.type === '열린 컷' ? ' type-open' : pd.type === '회상 컷' ? ' type-flashback' : pd.type === '강조 컷' ? ' type-emphasis' : '';
                     body += `<span class="sce-cut-badge${cls}">${escapeHtml(pd.type)}</span> `;
@@ -4829,8 +4832,8 @@ h1{font-size:1.1em;font-weight:700;margin-bottom:24px;padding-bottom:10px;border
 .sce-page{margin-bottom:8px}
 .sce-page-header{font-weight:900;font-size:0.82em;padding:12px 0 8px;border-bottom:2px solid #ced4da;margin-bottom:16px;letter-spacing:0.5px}
 .sce-panel{padding:0 0 4px;position:relative}
-.sce-cut-num{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:#1a2332;color:#fff;vertical-align:middle}
-.sce-cut-badge{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:#1a2332;color:#fff;vertical-align:middle}
+.sce-cut-num{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:${themePrimary};color:#fff;vertical-align:middle}
+.sce-cut-badge{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:${themePrimary};color:#fff;vertical-align:middle}
 .sce-cut-badge.type-open{background:#059669}.sce-cut-badge.type-flashback{background:#7c3aed}.sce-cut-badge.type-emphasis{background:#e63946}
 .sce-scene{font-weight:700;color:#14532d;margin:2px 0}
 .sce-action{font-weight:700;color:#713f12;margin:2px 0}
@@ -5028,9 +5031,15 @@ ${body}
             container.querySelectorAll('.panel').forEach(p => p.remove());
             page.panels.forEach((pd, panelIdx) => {
                 if (!pd.top && !pd.left) {
-                    const offset = (panelIdx * 18) % 80;
-                    pd.top = (10 + offset) + 'px';
-                    pd.left = (10 + offset) + 'px';
+                    const dims = getPageDims();
+                    const pw = 120, ph = 90, gap = 8, pad = 10;
+                    const cols = Math.floor((dims.w - pad * 2) / (pw + gap)) || 1;
+                    const row = Math.floor(panelIdx / cols);
+                    const col = panelIdx % cols;
+                    pd.top = (pad + row * (ph + gap)) + 'px';
+                    pd.left = (pad + col * (pw + gap)) + 'px';
+                    pd.width = pw + 'px';
+                    pd.height = ph + 'px';
                 }
                 if (!pd.width) pd.width = '';
                 if (!pd.height) pd.height = '';
