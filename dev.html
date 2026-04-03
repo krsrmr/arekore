@@ -4965,53 +4965,6 @@ ${body}
         scenarioRenderKeepScroll();
     }
 
-    function scenarioMovePanel(pageIdx, panelIdx, dir) {
-        scenarioReadFromDOM();
-        const page = scenarioData[pageIdx];
-        if (!page) return;
-        const newIdx = panelIdx + dir;
-
-        if (newIdx >= 0 && newIdx < page.panels.length) {
-            // 같은 페이지 내 이동
-            const temp = page.panels[panelIdx];
-            page.panels[panelIdx] = page.panels[newIdx];
-            page.panels[newIdx] = temp;
-        } else if (dir === -1 && pageIdx > 0) {
-            // 이전 페이지의 마지막으로 이동
-            const panel = page.panels.splice(panelIdx, 1)[0];
-            scenarioData[pageIdx - 1].panels.push(panel);
-        } else if (dir === 1 && pageIdx < scenarioData.length - 1) {
-            // 다음 페이지의 처음으로 이동
-            const panel = page.panels.splice(panelIdx, 1)[0];
-            scenarioData[pageIdx + 1].panels.unshift(panel);
-        } else {
-            return; // 이동 불가
-        }
-        scenarioRenderKeepScroll();
-    }
-
-    function scenarioAddDynItem(pageIdx, panelIdx, type) {
-        scenarioReadFromDOM();
-        if (!scenarioData[pageIdx] || !scenarioData[pageIdx].panels[panelIdx]) return;
-        scenarioData[pageIdx].panels[panelIdx].dynamicItems.push({
-            type: type,
-            text: '',
-            color: type === 'dialogue' ? '#eff6ff' : '#fff1f2',
-            isNarration: false,
-            isThought: false,
-            charId: ''
-        });
-        scenarioRenderKeepScroll();
-        // 해당 패널의 마지막 textarea에 포커스
-        setTimeout(() => {
-            const panels = document.querySelectorAll(`.sce-panel[data-page-idx="${pageIdx}"][data-panel-idx="${panelIdx}"]`);
-            if (panels.length) {
-                const textareas = panels[0].querySelectorAll('.sce-dyn-item textarea');
-                if (textareas.length) textareas[textareas.length - 1].focus();
-            }
-        }, 50);
-    }
-
     function scenarioDeleteDynItem(btn) {
         const dynItem = btn.closest('.sce-dyn-item');
         if (dynItem) dynItem.remove();
