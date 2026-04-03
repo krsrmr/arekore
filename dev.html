@@ -1180,6 +1180,7 @@
     .sce-view-cut-badge.type-open { background: #059669; }
     .sce-view-cut-badge.type-flashback { background: #7c3aed; }
     .sce-view-cut-badge.type-emphasis { background: var(--accent); }
+    .sce-body.hide-cut-types .sce-view-cut-badge { visibility: hidden; }
     .sce-view-scene { font-weight: 700; color: #14532d; margin: 2px 0; }
     .sce-view-action { font-weight: 700; color: #713f12; margin: 2px 0; }
     .sce-view-notes {
@@ -1426,6 +1427,7 @@
                 <div class="sce-header-title">📝 시나리오 모드</div>
                 <div class="sce-header-actions">
                     <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutNumCheck" onchange="toggleScenarioCutNumbers()"> 컷 번호</label>
+                    <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutTypeCheck" checked onchange="toggleScenarioCutTypes()"> 컷 종류</label>
                     <button class="sce-add-page-btn" onclick="scenarioAddPage()">＋ 쪽 추가</button>
                     <button class="sce-add-page-btn" onclick="exportScenarioHTML()" title="시나리오 출력">출력</button>
                 </div>
@@ -4332,6 +4334,7 @@ function viewerSaveAll() {
         const proj = appData.projects.find(p => p.id === activeProjId);
         const chars = (proj && proj.characters) ? proj.characters : [];
         let html = '';
+        let globalCutIdx = 0;
 
         scenarioData.forEach((page, pageIdx) => {
             html += `<div class="sce-page" data-page-idx="${pageIdx}">`;
@@ -4347,7 +4350,8 @@ function viewerSaveAll() {
                 html += `<div class="sce-page-empty">컷이 없습니다. ＋ 컷 버튼으로 추가하세요.</div>`;
             } else {
                 page.panels.forEach((pd, panelIdx) => {
-                    html += renderScenarioPanel(pd, pageIdx, panelIdx, chars);
+                    html += renderScenarioPanel(pd, pageIdx, panelIdx, chars, globalCutIdx);
+                    globalCutIdx++;
                 });
             }
 
@@ -4374,14 +4378,20 @@ function viewerSaveAll() {
         if (cutNumCheck && cutNumCheck.checked) {
             body.classList.add('show-cut-nums');
         }
+        // 컷 종류 토글 상태 복원
+        const cutTypeCheck = document.getElementById('sceCutTypeCheck');
+        if (cutTypeCheck && !cutTypeCheck.checked) {
+            body.classList.add('hide-cut-types');
+        }
     }
 
     // 각본 형식 뷰 렌더링
-    function renderScenarioPanelView(pd, panelIdx, chars) {
+    function renderScenarioPanelView(pd, panelIdx, chars, globalCutIdx) {
         let html = '';
         let hasContent = false;
         // 컷 번호 뱃지 (토글로 표시) — 컷 종류 뱃지와 일렬 배치
-        html += `<span class="sce-panel-cut-num-badge">컷 ${panelIdx + 1}</span>`;
+        const cutNum = (globalCutIdx != null ? globalCutIdx : panelIdx) + 1;
+        html += `<span class="sce-panel-cut-num-badge">컷 ${cutNum}</span>`;
         // 컷 종류 뱃지
         if (pd.type) {
             hasContent = true;
@@ -4423,7 +4433,7 @@ function viewerSaveAll() {
         return html;
     }
 
-    function renderScenarioPanel(pd, pageIdx, panelIdx, chars) {
+    function renderScenarioPanel(pd, pageIdx, panelIdx, chars, globalCutIdx) {
         let html = `<div class="sce-panel" data-page-idx="${pageIdx}" data-panel-idx="${panelIdx}" draggable="true">`;
 
         // 호버 시 표시되는 액션바
@@ -4435,7 +4445,7 @@ function viewerSaveAll() {
 
         // 뷰 모드 (각본 형식)
         html += `<div class="sce-view">`;
-        html += renderScenarioPanelView(pd, panelIdx, chars);
+        html += renderScenarioPanelView(pd, panelIdx, chars, globalCutIdx);
         html += `</div>`;
 
         // 편집 모드 (폼)
@@ -4776,6 +4786,17 @@ function viewerSaveAll() {
         }
     }
 
+    function toggleScenarioCutTypes() {
+        const chk = document.getElementById('sceCutTypeCheck');
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        if (chk && !chk.checked) {
+            body.classList.add('hide-cut-types');
+        } else {
+            body.classList.remove('hide-cut-types');
+        }
+    }
+
     function exportScenarioHTML() {
         // 시나리오 데이터 최신 상태로 읽기
         scenarioReadFromDOM();
@@ -4787,18 +4808,21 @@ function viewerSaveAll() {
         const pName = proj ? proj.name : '';
 
         const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
+        const showCutTypes = document.getElementById('sceCutTypeCheck')?.checked ?? true;
 
         let body = '';
+        let globalCutIdx = 0;
         scenarioData.forEach((page, pageIdx) => {
             body += `<div class="sce-page">`;
             body += `<div class="sce-page-header">${pageIdx + 1}쪽</div>`;
             page.panels.forEach((pd, panelIdx) => {
                 body += `<div class="sce-panel">`;
-                if (showCutNums) body += `<span class="sce-cut-num">컷 ${panelIdx + 1}</span> `;
-                if (pd.type) {
+                if (showCutNums) body += `<span class="sce-cut-num">컷 ${globalCutIdx + 1}</span> `;
+                if (pd.type && showCutTypes) {
                     const cls = pd.type === '열린 컷' ? ' type-open' : pd.type === '회상 컷' ? ' type-flashback' : pd.type === '강조 컷' ? ' type-emphasis' : '';
                     body += `<span class="sce-cut-badge${cls}">${escapeHtml(pd.type)}</span> `;
                 }
+                globalCutIdx++;
                 if (pd.scene) body += `<div class="sce-scene">${formatPanelText(pd.scene)}</div>`;
                 if (pd.action) body += `<div class="sce-action">${formatPanelText(pd.action)}</div>`;
                 (pd.dynamicItems || []).forEach(item => {
@@ -4828,7 +4852,10 @@ function viewerSaveAll() {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:800px;margin:0 auto;padding:32px 24px;color:#1a1e2e;line-height:1.85;font-size:15px}
-h1{font-size:1.1em;font-weight:700;margin-bottom:24px;padding-bottom:10px;border-bottom:2px solid #ced4da;color:#1a1e2e}
+#viewer-header{display:flex;align-items:center;gap:10px;padding:10px 24px;background:white;border-bottom:1px solid #e2e5ea;font-family:'Noto Sans KR','Malgun Gothic',sans-serif;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,0.06);margin-bottom:24px}
+.vh-title{font-weight:700;font-size:0.98em;color:#1a1e2e}
+.vh-sep{color:#adb5bd}
+.vh-chap{color:#6c757d;font-size:0.88em}
 .sce-page{margin-bottom:8px}
 .sce-page-header{font-weight:900;font-size:0.82em;padding:12px 0 8px;border-bottom:2px solid #ced4da;margin-bottom:16px;letter-spacing:0.5px}
 .sce-panel{padding:0 0 4px;position:relative}
@@ -4844,9 +4871,9 @@ h1{font-size:1.1em;font-weight:700;margin-bottom:24px;padding-bottom:10px;border
 .sce-sfx-label{font-weight:700;min-width:56px;flex-shrink:0;text-align:left;padding-right:12px;font-size:0.82em;color:#9f1239}
 .sce-sfx-text{flex:1;font-weight:600;color:#9f1239}
 .sce-notes{font-size:0.85em;color:#6c757d;font-style:italic;margin:2px 0}
-@media print{body{padding:12px}h1{font-size:1em}}
+@media print{body{padding:12px}#viewer-header{position:static;box-shadow:none}}
 </style></head><body>
-<h1>${escapeHtml(pName)} — ${escapeHtml(chapName)}</h1>
+<div id="viewer-header"><span class="vh-title">${escapeHtml(pName)}</span><span class="vh-sep">—</span><span class="vh-chap">${escapeHtml(chapName)}</span></div>
 ${body}
 </body></html>`;
 
