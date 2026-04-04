@@ -1417,6 +1417,12 @@
                         <div class="edp-row">
                             <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportViewerHTML(); toggleExportDropdown()">HTML 내보내기</button>
                         </div>
+                        <div class="edp-row">
+                            <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportContiPDF(); toggleExportDropdown()">PDF 내보내기</button>
+                        </div>
+                        <div class="edp-row">
+                            <button class="save-viewer-btn" style="width:100%;justify-content:center;background:#1e40af;" onclick="exportContiWebPZip(); toggleExportDropdown()">이미지 내보내기 (WebP)</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1429,7 +1435,17 @@
                     <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutNumCheck" onchange="toggleScenarioCutNumbers()"> 컷 번호</label>
                     <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutTypeCheck" checked onchange="toggleScenarioCutTypes()"> 컷 종류</label>
                     <button class="sce-add-page-btn" onclick="scenarioAddPage()">＋ 쪽 추가</button>
-                    <button class="sce-add-page-btn" onclick="exportScenarioHTML()" title="시나리오 출력">출력</button>
+                    <div class="export-options-wrap" style="position:relative;">
+                        <button class="sce-add-page-btn" id="sceExportDropdownBtn" onclick="toggleSceExportDropdown()">출력 <span class="edb-arrow">▾</span></button>
+                        <div class="export-dropdown-panel" id="sceExportDropdownPanel">
+                            <div class="edp-row">
+                                <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportScenarioHTML(); toggleSceExportDropdown()">HTML 내보내기</button>
+                            </div>
+                            <div class="edp-row">
+                                <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportScenarioPDF(); toggleSceExportDropdown()">PDF 내보내기</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="sce-body" id="sceBody"></div>
@@ -1579,6 +1595,16 @@
 
 <div id="toast"></div>
 
+<div id="exportProgressModal" class="modal-overlay">
+    <div class="modal-content" style="width:360px;text-align:center;padding:28px 24px;">
+        <div id="exportProgressTitle" style="font-weight:700;font-size:0.95em;margin-bottom:14px;">내보내기 준비 중...</div>
+        <div style="background:#e2e5ea;border-radius:6px;height:10px;overflow:hidden;">
+            <div id="exportProgressBar" style="height:100%;width:0%;background:var(--theme-primary,#166534);border-radius:6px;transition:width 0.15s;"></div>
+        </div>
+        <div id="exportProgressText" style="font-size:0.82em;color:#6c757d;margin-top:8px;">0%</div>
+    </div>
+</div>
+
 <!-- Keyboard shortcuts panel -->
 <div id="shortcuts-hint">
     <div style="font-weight:700;margin-bottom:5px;color:white;font-size:0.95em;">⌨️ 단축키</div>
@@ -1610,6 +1636,51 @@
     let undoStack = [];           // Undo 스택
     let redoStack = [];           // Redo 스택
     const UNDO_MAX = 40;
+
+    // ===== EXPORT LIBS (dynamic) =====
+    const _libCache = {};
+    function loadLib(name, url) {
+        if (_libCache[name]) return Promise.resolve(_libCache[name]);
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = url;
+            s.onload = () => { _libCache[name] = true; resolve(true); };
+            s.onerror = () => reject(new Error(`${name} 로드 실패`));
+            document.head.appendChild(s);
+        });
+    }
+    async function ensureExportLibs(need) {
+        showExportProgress('라이브러리 로딩 중...', 0);
+        await loadLib('html2canvas', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        if (need === 'pdf') {
+            await loadLib('jspdf', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js');
+        } else if (need === 'zip') {
+            await loadLib('JSZip', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+        }
+    }
+
+    // ===== EXPORT PROGRESS =====
+    function showExportProgress(title, pct, detail) {
+        const modal = document.getElementById('exportProgressModal');
+        if (modal) modal.classList.add('show');
+        const t = document.getElementById('exportProgressTitle');
+        const b = document.getElementById('exportProgressBar');
+        const d = document.getElementById('exportProgressText');
+        if (t) t.textContent = title;
+        if (b) b.style.width = pct + '%';
+        if (d) d.textContent = detail || (Math.round(pct) + '%');
+    }
+    function hideExportProgress() {
+        const modal = document.getElementById('exportProgressModal');
+        if (modal) modal.classList.remove('show');
+    }
+    function canvasToBlob(canvas, type, quality) {
+        return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+    }
+    function checkWebPSupport() {
+        const c = document.createElement('canvas'); c.width = 1; c.height = 1;
+        return c.toDataURL('image/webp').startsWith('data:image/webp');
+    }
 
     // ===== TOAST =====
     function showToast(msg, type = '', duration = 2200) {
@@ -1661,6 +1732,12 @@
         if (wrap && !wrap.contains(e.target)) {
             document.getElementById('exportDropdownBtn')?.classList.remove('open');
             document.getElementById('exportDropdownPanel')?.classList.remove('open');
+        }
+        // 시나리오 내보내기 드롭다운 외부 클릭 시 닫기
+        const sceBtn = document.getElementById('sceExportDropdownBtn');
+        if (sceBtn && !sceBtn.closest('.export-options-wrap')?.contains(e.target)) {
+            sceBtn.classList.remove('open');
+            document.getElementById('sceExportDropdownPanel')?.classList.remove('open');
         }
     });
 
@@ -1894,6 +1971,14 @@
     function toggleExportDropdown() {
         const btn = document.getElementById('exportDropdownBtn');
         const panel = document.getElementById('exportDropdownPanel');
+        if (!btn || !panel) return;
+        const isOpen = panel.classList.contains('open');
+        btn.classList.toggle('open', !isOpen);
+        panel.classList.toggle('open', !isOpen);
+    }
+    function toggleSceExportDropdown() {
+        const btn = document.getElementById('sceExportDropdownBtn');
+        const panel = document.getElementById('sceExportDropdownPanel');
         if (!btn || !panel) return;
         const isOpen = panel.classList.contains('open');
         btn.classList.toggle('open', !isOpen);
@@ -2245,6 +2330,8 @@
             document.getElementById('shortcuts-hint')?.classList.remove('visible');
             document.getElementById('exportDropdownBtn')?.classList.remove('open');
             document.getElementById('exportDropdownPanel')?.classList.remove('open');
+            document.getElementById('sceExportDropdownBtn')?.classList.remove('open');
+            document.getElementById('sceExportDropdownPanel')?.classList.remove('open');
             return;
         }
         // ? : 단축키 목록 토글
@@ -3842,6 +3929,194 @@ function viewerSaveAll() {
         showToast('HTML 내보내기 완료' + (opts.length ? ' (' + opts.join(', ') + ')' : ''), 'success');
     }
 
+    // ===== CONTI PDF EXPORT (2x2 A4 landscape) =====
+    async function exportContiPDF() {
+        try {
+            await ensureExportLibs('pdf');
+            const { jsPDF } = window.jspdf;
+            const proj = appData.projects.find(p => p.id === activeProjId);
+            const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+            const pName = proj ? proj.name : '프로젝트';
+            const chapName = chap ? chap.name : '챕터';
+            const binding = getEffectiveBinding();
+            const dims = getPageDims();
+            const total = pagesArray.length;
+            if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
+
+            // 선택 해제
+            if (activePanel) { activePanel.classList.remove('panel-selected'); }
+
+            // A4 landscape: 297 x 210 mm
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const margin = 10;
+            const gap = 4;
+            const usableW = 297 - margin * 2;  // 277mm
+            const usableH = 210 - margin * 2;  // 190mm
+            const cellW = (usableW - gap) / 2;  // ~136.5mm
+            const cellH = (usableH - gap) / 2;  // ~93mm
+            const labelH = 5; // 쪽 번호 영역
+
+            // 셀 내 이미지 크기 (비율 유지)
+            const pageRatio = dims.h / dims.w;
+            let imgW = cellW;
+            let imgH = imgW * pageRatio;
+            if (imgH > cellH - labelH) {
+                imgH = cellH - labelH;
+                imgW = imgH / pageRatio;
+            }
+
+            // 임시로 page-scale 1 설정
+            const origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale');
+            document.documentElement.style.setProperty('--page-scale', '1');
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+            const gridPositions = [
+                { row: 0, col: 0 }, { row: 0, col: 1 },
+                { row: 1, col: 0 }, { row: 1, col: 1 }
+            ];
+
+            for (let i = 0; i < total; i += 4) {
+                if (i > 0) pdf.addPage();
+                const groupSize = Math.min(4, total - i);
+
+                for (let j = 0; j < groupSize; j++) {
+                    const pageIdx = i + j;
+                    showExportProgress('PDF 생성 중...', ((pageIdx + 1) / total) * 90 + 5, `${pageIdx + 1} / ${total} 쪽`);
+                    await new Promise(r => setTimeout(r, 10)); // UI 업데이트
+
+                    const wrapper = pagesArray[pageIdx];
+                    const container = wrapper.querySelector('.panel-container');
+                    if (!container) continue;
+
+                    const canvas = await html2canvas(container, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        useCORS: true,
+                        logging: false
+                    });
+
+                    const pos = gridPositions[j];
+                    // 바인딩 방향에 따른 좌우 배치
+                    let col = pos.col;
+                    if (binding === 'right') col = 1 - col;
+
+                    const cellX = margin + col * (cellW + gap);
+                    const cellY = margin + pos.row * (cellH + gap);
+                    // 이미지를 셀 중앙에 배치
+                    const imgX = cellX + (cellW - imgW) / 2;
+                    const imgY = cellY + (cellH - labelH - imgH) / 2;
+
+                    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                    pdf.addImage(imgData, 'JPEG', imgX, imgY, imgW, imgH);
+
+                    // 쪽 번호 (이미지 아래 중앙)
+                    pdf.setFontSize(7);
+                    pdf.setTextColor(120);
+                    const pageNum = String(pageIdx + 1);
+                    pdf.text(pageNum, cellX + cellW / 2, cellY + cellH - 1, { align: 'center' });
+                }
+            }
+
+            // page-scale 복원
+            document.documentElement.style.setProperty('--page-scale', origScale);
+
+            showExportProgress('PDF 저장 중...', 98);
+            pdf.save(`${pName}-${chapName}_콘티.pdf`);
+            hideExportProgress();
+            showToast('📄 콘티 PDF 내보내기 완료', 'success');
+        } catch (err) {
+            hideExportProgress();
+            document.documentElement.style.setProperty('--page-scale', getComputedStyle(document.documentElement).getPropertyValue('--page-scale') || '1');
+            showToast('PDF 내보내기 실패: ' + err.message, 'error');
+            console.error(err);
+        }
+    }
+
+    // ===== CONTI WEBP ZIP EXPORT =====
+    async function exportContiWebPZip() {
+        try {
+            // html2canvas도 필요하므로 둘 다 로드
+            await ensureExportLibs('zip');
+            await loadLib('html2canvas', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+
+            const proj = appData.projects.find(p => p.id === activeProjId);
+            const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+            const pName = proj ? proj.name : '프로젝트';
+            const chapName = chap ? chap.name : '챕터';
+            const dims = getPageDims();
+            const total = pagesArray.length;
+            if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
+
+            // WebP 지원 확인
+            const webpOk = checkWebPSupport();
+            const imgType = webpOk ? 'image/webp' : 'image/png';
+            const imgExt = webpOk ? '.webp' : '.png';
+
+            if (!webpOk) {
+                const proceed = confirm(
+                    '⚠️ 이 브라우저는 WebP 형식을 지원하지 않습니다.\n\n' +
+                    'PNG 형식으로 대체 출력합니다.\n' +
+                    '• 출력 시간이 더 오래 걸릴 수 있습니다.\n' +
+                    '• 파일 용량이 상당히 커질 수 있습니다.\n\n' +
+                    '계속 진행하시겠습니까?'
+                );
+                if (!proceed) { hideExportProgress(); return; }
+            }
+
+            // 선택 해제
+            if (activePanel) { activePanel.classList.remove('panel-selected'); }
+
+            const zip = new JSZip();
+            const scaleFactor = 900 / dims.w;
+
+            // 임시로 page-scale 1 설정
+            const origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale');
+            document.documentElement.style.setProperty('--page-scale', '1');
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+            for (let i = 0; i < total; i++) {
+                showExportProgress('이미지 생성 중...', ((i + 1) / total) * 85 + 5, `${i + 1} / ${total} 쪽`);
+                await new Promise(r => setTimeout(r, 10));
+
+                const wrapper = pagesArray[i];
+                const container = wrapper.querySelector('.panel-container');
+                if (!container) continue;
+
+                const canvas = await html2canvas(container, {
+                    scale: scaleFactor,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    logging: false
+                });
+
+                const blob = await canvasToBlob(canvas, imgType, 0.9);
+                const pageNum = i + 1;
+                const fileName = `${pName}-${chapName}_${pageNum}${imgExt}`;
+                zip.file(fileName, blob);
+            }
+
+            // page-scale 복원
+            document.documentElement.style.setProperty('--page-scale', origScale);
+
+            showExportProgress('ZIP 압축 중...', 92);
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${pName}-${chapName}_images.zip`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+            hideExportProgress();
+            showToast(`📦 이미지 ZIP 내보내기 완료 (${total}장${!webpOk ? ', PNG' : ''})`, 'success');
+        } catch (err) {
+            hideExportProgress();
+            document.documentElement.style.setProperty('--page-scale', getComputedStyle(document.documentElement).getPropertyValue('--page-scale') || '1');
+            showToast('이미지 내보내기 실패: ' + err.message, 'error');
+            console.error(err);
+        }
+    }
+
     // ===== IMPORT FROM EDIT HTML =====
     function importFromEditHTML(event) {
         const file = event.target.files[0];
@@ -4797,19 +5072,7 @@ function viewerSaveAll() {
         }
     }
 
-    function exportScenarioHTML() {
-        // 시나리오 데이터 최신 상태로 읽기
-        scenarioReadFromDOM();
-        const proj = appData.projects.find(p => p.id === activeProjId);
-        const chars = (proj && proj.characters) ? proj.characters : [];
-        const themePrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#1a2332';
-        const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
-        const chapName = chap ? chap.name : '시나리오';
-        const pName = proj ? proj.name : '';
-
-        const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
-        const showCutTypes = document.getElementById('sceCutTypeCheck')?.checked ?? true;
-
+    function buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary) {
         let body = '';
         let globalCutIdx = 0;
         scenarioData.forEach((page, pageIdx) => {
@@ -4846,11 +5109,11 @@ function viewerSaveAll() {
             });
             body += `</div>`;
         });
+        return body;
+    }
 
-        const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${escapeHtml(pName)} — ${escapeHtml(chapName)} 시나리오</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
+    function getScenarioExportCSS(themePrimary) {
+        return `*{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:800px;margin:0 auto;padding:32px 24px;color:#1a1e2e;line-height:1.85;font-size:15px}
 #viewer-header{display:flex;align-items:center;gap:10px;padding:10px 24px;background:white;border-bottom:1px solid #e2e5ea;font-family:'Noto Sans KR','Malgun Gothic',sans-serif;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,0.06);margin-bottom:24px}
 .vh-title{font-weight:700;font-size:0.98em;color:#1a1e2e}
@@ -4871,8 +5134,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;m
 .sce-sfx-label{font-weight:700;min-width:56px;flex-shrink:0;text-align:left;padding-right:12px;font-size:0.82em;color:#9f1239}
 .sce-sfx-text{flex:1;font-weight:600;color:#9f1239}
 .sce-notes{font-size:0.85em;color:#6c757d;font-style:italic;margin:2px 0}
-@media print{body{padding:12px}#viewer-header{position:static;box-shadow:none}}
-</style></head><body>
+@media print{body{padding:12px}#viewer-header{position:static;box-shadow:none}}`;
+    }
+
+    function exportScenarioHTML() {
+        // 시나리오 데이터 최신 상태로 읽기
+        scenarioReadFromDOM();
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        const themePrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#1a2332';
+        const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+        const chapName = chap ? chap.name : '시나리오';
+        const pName = proj ? proj.name : '';
+
+        const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
+        const showCutTypes = document.getElementById('sceCutTypeCheck')?.checked ?? true;
+
+        const body = buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary);
+        const css = getScenarioExportCSS(themePrimary);
+
+        const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(pName)} — ${escapeHtml(chapName)} 시나리오</title>
+<style>${css}</style></head><body>
 <div id="viewer-header"><span class="vh-title">${escapeHtml(pName)}</span><span class="vh-sep">—</span><span class="vh-chap">${escapeHtml(chapName)}</span></div>
 ${body}
 </body></html>`;
@@ -4883,6 +5166,90 @@ ${body}
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 3000);
         showToast('📄 시나리오 HTML 내보내기 완료', 'success');
+    }
+
+    // ===== SCENARIO PDF EXPORT =====
+    async function exportScenarioPDF() {
+        try {
+            await ensureExportLibs('pdf');
+            const { jsPDF } = window.jspdf;
+
+            scenarioReadFromDOM();
+            const proj = appData.projects.find(p => p.id === activeProjId);
+            const chars = (proj && proj.characters) ? proj.characters : [];
+            const themePrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#1a2332';
+            const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+            const chapName = chap ? chap.name : '시나리오';
+            const pName = proj ? proj.name : '';
+
+            if (!scenarioData.length) { hideExportProgress(); showToast('출력할 데이터가 없습니다.', 'error'); return; }
+
+            showExportProgress('시나리오 PDF 생성 중...', 10);
+
+            const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
+            const showCutTypes = document.getElementById('sceCutTypeCheck')?.checked ?? true;
+            const bodyHTML = buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary);
+            const css = getScenarioExportCSS(themePrimary);
+
+            // 오프스크린 컨테이너 생성
+            const container = document.createElement('div');
+            container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;';
+            container.innerHTML = `<style>${css}</style>
+<div id="viewer-header"><span class="vh-title">${escapeHtml(pName)}</span><span class="vh-sep">—</span><span class="vh-chap">${escapeHtml(chapName)}</span></div>
+${bodyHTML}`;
+            document.body.appendChild(container);
+
+            // 렌더링 대기
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+            showExportProgress('시나리오 PDF 생성 중...', 25);
+
+            // Orphan 제어: 쪽 헤더가 페이지 하단에 너무 가깝지 않도록
+            // A4: 297mm, 여백 15mm*2 = 267mm content. 800px container에서 1px ≈ 0.334mm → 267mm ≈ 799px per page
+            const pxPerPage = 799;
+            container.querySelectorAll('.sce-page').forEach(pageEl => {
+                const top = pageEl.offsetTop;
+                const pageStart = top % pxPerPage;
+                const remaining = pxPerPage - pageStart;
+                // 남은 공간이 60px 미만이면 (헤더 + 1~2줄) 다음 페이지로 밀기
+                if (pageStart > 0 && remaining < 60) {
+                    pageEl.style.marginTop = (remaining + 8) + 'px';
+                }
+            });
+
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+            showExportProgress('시나리오 PDF 생성 중...', 40);
+
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+            await new Promise((resolve, reject) => {
+                pdf.html(container, {
+                    callback: (doc) => resolve(doc),
+                    x: 15,
+                    y: 15,
+                    width: 170,           // A4 210mm - 15mm*2 = 180mm, 약간 여유
+                    windowWidth: 800,
+                    autoPaging: 'text',
+                    margin: [15, 15, 15, 15],
+                    html2canvas: { scale: 2, useCORS: true, logging: false }
+                });
+            });
+
+            // 오프스크린 컨테이너 제거
+            document.body.removeChild(container);
+
+            showExportProgress('PDF 저장 중...', 95);
+            pdf.save(`${pName}-${chapName}_시나리오.pdf`);
+            hideExportProgress();
+            showToast('📄 시나리오 PDF 내보내기 완료', 'success');
+        } catch (err) {
+            hideExportProgress();
+            showToast('PDF 내보내기 실패: ' + err.message, 'error');
+            console.error(err);
+            // 오프스크린 컨테이너 정리
+            const leftover = document.querySelector('div[style*="left:-9999px"]');
+            if (leftover) leftover.remove();
+        }
     }
 
     function scenarioTogglePage(headerEl) {
