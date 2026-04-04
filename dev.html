@@ -3931,6 +3931,7 @@ function viewerSaveAll() {
 
     // ===== CONTI PDF EXPORT (2x2 A4 landscape) =====
     async function exportContiPDF() {
+        let origScale;
         try {
             await ensureExportLibs('pdf');
             const { jsPDF } = window.jspdf;
@@ -3944,7 +3945,7 @@ function viewerSaveAll() {
             if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
 
             // 선택 해제
-            if (activePanel) { activePanel.classList.remove('panel-selected'); }
+            if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
 
             // A4 landscape: 297 x 210 mm
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -3966,7 +3967,7 @@ function viewerSaveAll() {
             }
 
             // 임시로 page-scale 1 설정
-            const origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale');
+            origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale').trim();
             document.documentElement.style.setProperty('--page-scale', '1');
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
@@ -3988,7 +3989,7 @@ function viewerSaveAll() {
                     const container = wrapper.querySelector('.panel-container');
                     if (!container) continue;
 
-                    const canvas = await html2canvas(container, {
+                    const canvas = await window.html2canvas(container, {
                         scale: 2,
                         backgroundColor: '#ffffff',
                         useCORS: true,
@@ -4026,7 +4027,7 @@ function viewerSaveAll() {
             showToast('📄 콘티 PDF 내보내기 완료', 'success');
         } catch (err) {
             hideExportProgress();
-            document.documentElement.style.setProperty('--page-scale', getComputedStyle(document.documentElement).getPropertyValue('--page-scale') || '1');
+            if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
             showToast('PDF 내보내기 실패: ' + err.message, 'error');
             console.error(err);
         }
@@ -4034,20 +4035,9 @@ function viewerSaveAll() {
 
     // ===== CONTI WEBP ZIP EXPORT =====
     async function exportContiWebPZip() {
+        let origScale;
         try {
-            // html2canvas도 필요하므로 둘 다 로드
-            await ensureExportLibs('zip');
-            await loadLib('html2canvas', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-
-            const proj = appData.projects.find(p => p.id === activeProjId);
-            const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
-            const pName = proj ? proj.name : '프로젝트';
-            const chapName = chap ? chap.name : '챕터';
-            const dims = getPageDims();
-            const total = pagesArray.length;
-            if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
-
-            // WebP 지원 확인
+            // WebP 지원 확인 (라이브러리 로드 전에 먼저 확인)
             const webpOk = checkWebPSupport();
             const imgType = webpOk ? 'image/webp' : 'image/png';
             const imgExt = webpOk ? '.webp' : '.png';
@@ -4060,17 +4050,27 @@ function viewerSaveAll() {
                     '• 파일 용량이 상당히 커질 수 있습니다.\n\n' +
                     '계속 진행하시겠습니까?'
                 );
-                if (!proceed) { hideExportProgress(); return; }
+                if (!proceed) return;
             }
 
+            await ensureExportLibs('zip');
+
+            const proj = appData.projects.find(p => p.id === activeProjId);
+            const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+            const pName = proj ? proj.name : '프로젝트';
+            const chapName = chap ? chap.name : '챕터';
+            const dims = getPageDims();
+            const total = pagesArray.length;
+            if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
+
             // 선택 해제
-            if (activePanel) { activePanel.classList.remove('panel-selected'); }
+            if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
 
             const zip = new JSZip();
             const scaleFactor = 900 / dims.w;
 
             // 임시로 page-scale 1 설정
-            const origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale');
+            origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale').trim();
             document.documentElement.style.setProperty('--page-scale', '1');
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
@@ -4082,7 +4082,7 @@ function viewerSaveAll() {
                 const container = wrapper.querySelector('.panel-container');
                 if (!container) continue;
 
-                const canvas = await html2canvas(container, {
+                const canvas = await window.html2canvas(container, {
                     scale: scaleFactor,
                     backgroundColor: '#ffffff',
                     useCORS: true,
@@ -4111,7 +4111,7 @@ function viewerSaveAll() {
             showToast(`📦 이미지 ZIP 내보내기 완료 (${total}장${!webpOk ? ', PNG' : ''})`, 'success');
         } catch (err) {
             hideExportProgress();
-            document.documentElement.style.setProperty('--page-scale', getComputedStyle(document.documentElement).getPropertyValue('--page-scale') || '1');
+            if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
             showToast('이미지 내보내기 실패: ' + err.message, 'error');
             console.error(err);
         }
@@ -5209,10 +5209,11 @@ ${bodyHTML}`;
             const pxPerPage = 799;
             container.querySelectorAll('.sce-page').forEach(pageEl => {
                 const top = pageEl.offsetTop;
-                const pageStart = top % pxPerPage;
-                const remaining = pxPerPage - pageStart;
+                const currentPageIdx = Math.floor(top / pxPerPage);
+                const posInPage = top - (currentPageIdx * pxPerPage);
+                const remaining = pxPerPage - posInPage;
                 // 남은 공간이 60px 미만이면 (헤더 + 1~2줄) 다음 페이지로 밀기
-                if (pageStart > 0 && remaining < 60) {
+                if (remaining > 0 && remaining < 60) {
                     pageEl.style.marginTop = (remaining + 8) + 'px';
                 }
             });
@@ -5223,16 +5224,18 @@ ${bodyHTML}`;
             const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
             await new Promise((resolve, reject) => {
-                pdf.html(container, {
-                    callback: (doc) => resolve(doc),
-                    x: 15,
-                    y: 15,
-                    width: 170,           // A4 210mm - 15mm*2 = 180mm, 약간 여유
-                    windowWidth: 800,
-                    autoPaging: 'text',
-                    margin: [15, 15, 15, 15],
-                    html2canvas: { scale: 2, useCORS: true, logging: false }
-                });
+                try {
+                    pdf.html(container, {
+                        callback: (doc) => resolve(doc),
+                        x: 15,
+                        y: 15,
+                        width: 170,           // A4 210mm - 15mm*2 = 180mm, 약간 여유
+                        windowWidth: 800,
+                        autoPaging: 'text',
+                        margin: [15, 15, 15, 15],
+                        html2canvas: { scale: 2, useCORS: true, logging: false }
+                    });
+                } catch (e) { reject(e); }
             });
 
             // 오프스크린 컨테이너 제거
