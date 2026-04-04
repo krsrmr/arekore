@@ -3944,8 +3944,13 @@ function viewerSaveAll() {
             const total = pagesArray.length;
             if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
 
-            // 선택 해제
+            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity 초기화)
             if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
+            const opacityBackup = [];
+            document.querySelectorAll('.panel[style*="opacity"]').forEach(p => {
+                opacityBackup.push({ el: p, val: p.style.opacity });
+                p.style.opacity = '';
+            });
 
             // A4 landscape: 297 x 210 mm
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -4018,8 +4023,9 @@ function viewerSaveAll() {
                 }
             }
 
-            // page-scale 복원
+            // page-scale + opacity 복원
             document.documentElement.style.setProperty('--page-scale', origScale);
+            opacityBackup.forEach(b => b.el.style.opacity = b.val);
 
             showExportProgress('PDF 저장 중...', 98);
             pdf.save(`${pName}-${chapName}_콘티.pdf`);
@@ -4028,6 +4034,7 @@ function viewerSaveAll() {
         } catch (err) {
             hideExportProgress();
             if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
+            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => b.el.style.opacity = b.val);
             showToast('PDF 내보내기 실패: ' + err.message, 'error');
             console.error(err);
         }
@@ -4063,8 +4070,13 @@ function viewerSaveAll() {
             const total = pagesArray.length;
             if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
 
-            // 선택 해제
+            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity 초기화)
             if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
+            const opacityBackup = [];
+            document.querySelectorAll('.panel[style*="opacity"]').forEach(p => {
+                opacityBackup.push({ el: p, val: p.style.opacity });
+                p.style.opacity = '';
+            });
 
             const zip = new JSZip();
             const scaleFactor = 900 / dims.w;
@@ -4095,8 +4107,9 @@ function viewerSaveAll() {
                 zip.file(fileName, blob);
             }
 
-            // page-scale 복원
+            // page-scale + opacity 복원
             document.documentElement.style.setProperty('--page-scale', origScale);
+            opacityBackup.forEach(b => b.el.style.opacity = b.val);
 
             showExportProgress('ZIP 압축 중...', 92);
             const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -4112,6 +4125,7 @@ function viewerSaveAll() {
         } catch (err) {
             hideExportProgress();
             if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
+            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => b.el.style.opacity = b.val);
             showToast('이미지 내보내기 실패: ' + err.message, 'error');
             console.error(err);
         }
