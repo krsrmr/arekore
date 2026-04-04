@@ -3952,15 +3952,15 @@ function viewerSaveAll() {
                 p.style.opacity = '';
             });
 
-            // A4 landscape: 297 x 210 mm
+            // A4 landscape: 297 x 210 mm, 2×1 배열 (가로 2쪽)
             const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            const margin = 10;
-            const gap = 4;
-            const usableW = 297 - margin * 2;  // 277mm
-            const usableH = 210 - margin * 2;  // 190mm
-            const cellW = (usableW - gap) / 2;  // ~136.5mm
-            const cellH = (usableH - gap) / 2;  // ~93mm
-            const labelH = 5; // 쪽 번호 영역
+            const margin = 12;
+            const gap = 6;
+            const usableW = 297 - margin * 2;  // 273mm
+            const usableH = 210 - margin * 2;  // 186mm
+            const cellW = (usableW - gap) / 2;  // ~133.5mm
+            const cellH = usableH;              // 186mm (전체 높이)
+            const labelH = 6; // 쪽 번호 영역
 
             // 셀 내 이미지 크기 (비율 유지)
             const pageRatio = dims.h / dims.w;
@@ -3976,19 +3976,29 @@ function viewerSaveAll() {
             document.documentElement.style.setProperty('--page-scale', '1');
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-            const gridPositions = [
-                { row: 0, col: 0 }, { row: 0, col: 1 },
-                { row: 1, col: 0 }, { row: 1, col: 1 }
-            ];
+            // 편집 화면과 동일한 스프레드 생성
+            const firstPageSel = document.getElementById('firstPageSelect');
+            const firstPageMode = firstPageSel ? firstPageSel.value : 'single';
+            const spreads = [];
+            let idx = 0;
+            if (firstPageMode === 'single') { spreads.push([0]); idx = 1; }
+            while (idx < total) {
+                if (idx + 1 < total) { spreads.push([idx, idx + 1]); idx += 2; }
+                else { spreads.push([idx]); idx++; }
+            }
 
-            for (let i = 0; i < total; i += 4) {
-                if (i > 0) pdf.addPage();
-                const groupSize = Math.min(4, total - i);
+            let processed = 0;
+            for (let si = 0; si < spreads.length; si++) {
+                if (si > 0) pdf.addPage();
+                const spread = spreads[si];
+                const isFirst = (si === 0);
+                const isLast = (si === spreads.length - 1 && si > 0);
 
-                for (let j = 0; j < groupSize; j++) {
-                    const pageIdx = i + j;
-                    showExportProgress('PDF 생성 중...', ((pageIdx + 1) / total) * 90 + 5, `${pageIdx + 1} / ${total} 쪽`);
-                    await new Promise(r => setTimeout(r, 10)); // UI 업데이트
+                for (let j = 0; j < spread.length; j++) {
+                    const pageIdx = spread[j];
+                    processed++;
+                    showExportProgress('PDF 생성 중...', (processed / total) * 90 + 5, `${processed} / ${total} 쪽`);
+                    await new Promise(r => setTimeout(r, 10));
 
                     const wrapper = pagesArray[pageIdx];
                     const container = wrapper.querySelector('.panel-container');
@@ -4001,25 +4011,35 @@ function viewerSaveAll() {
                         logging: false
                     });
 
-                    const pos = gridPositions[j];
-                    // 바인딩 방향에 따른 좌우 배치
-                    let col = pos.col;
-                    if (binding === 'right') col = 1 - col;
+                    // 좌우 배치 결정 (편집 화면 renderPages 로직과 동일)
+                    let col;
+                    if (spread.length === 1) {
+                        // 단독 쪽: 첫 번째면 우철→왼쪽/좌철→오른쪽, 마지막이면 반대
+                        if (isFirst) col = (binding === 'right') ? 0 : 1;
+                        else if (isLast) col = (binding === 'right') ? 1 : 0;
+                        else col = 0;
+                    } else {
+                        // 쌍: 우철이면 높은번호가 왼쪽(DOM 역순)
+                        col = (binding === 'right') ? (1 - j) : j;
+                    }
 
                     const cellX = margin + col * (cellW + gap);
-                    const cellY = margin + pos.row * (cellH + gap);
-                    // 이미지를 셀 중앙에 배치
+                    const cellY = margin;
                     const imgX = cellX + (cellW - imgW) / 2;
                     const imgY = cellY + (cellH - labelH - imgH) / 2;
 
                     const imgData = canvas.toDataURL('image/jpeg', 0.92);
                     pdf.addImage(imgData, 'JPEG', imgX, imgY, imgW, imgH);
 
+                    // 쪽 테두리 (회색)
+                    pdf.setDrawColor(180, 180, 180);
+                    pdf.setLineWidth(0.3);
+                    pdf.rect(imgX, imgY, imgW, imgH);
+
                     // 쪽 번호 (이미지 아래 중앙)
                     pdf.setFontSize(7);
                     pdf.setTextColor(120);
-                    const pageNum = String(pageIdx + 1);
-                    pdf.text(pageNum, cellX + cellW / 2, cellY + cellH - 1, { align: 'center' });
+                    pdf.text(String(pageIdx + 1), imgX + imgW / 2, imgY + imgH + labelH - 1, { align: 'center' });
                 }
             }
 
@@ -5182,7 +5202,7 @@ ${body}
         showToast('📄 시나리오 HTML 내보내기 완료', 'success');
     }
 
-    // ===== SCENARIO PDF EXPORT =====
+    // ===== SCENARIO PDF EXPORT (텍스트 라이브 — 선택/복사 가능) =====
     async function exportScenarioPDF() {
         try {
             await ensureExportLibs('pdf');
@@ -5205,45 +5225,38 @@ ${body}
             const bodyHTML = buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary);
             const css = getScenarioExportCSS(themePrimary);
 
-            // 오프스크린 컨테이너 생성
+            // jsPDF.html()을 위한 렌더 컨테이너 — 화면에 보이되 진행률 모달 뒤에 위치
             const container = document.createElement('div');
-            container.style.cssText = 'position:absolute;left:-9999px;top:0;width:800px;';
-            container.innerHTML = `<style>${css}</style>
-<div id="viewer-header"><span class="vh-title">${escapeHtml(pName)}</span><span class="vh-sep">—</span><span class="vh-chap">${escapeHtml(chapName)}</span></div>
-${bodyHTML}`;
+            container.style.cssText = 'position:fixed;left:0;top:0;width:800px;z-index:-1;opacity:0;pointer-events:none;overflow:hidden;';
+            container.innerHTML = `<style>${css}
+body,.sce-page,.sce-panel,.sce-dlg-row,.sce-sfx-row,.sce-scene,.sce-action,.sce-notes{all:revert}
+</style>
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:800px;padding:32px 24px;color:#1a1e2e;line-height:1.85;font-size:15px;">
+<style>${css}</style>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:24px;border-bottom:1px solid #e2e5ea;">
+<span style="font-weight:700;font-size:0.98em;color:#1a1e2e">${escapeHtml(pName)}</span>
+<span style="color:#adb5bd">—</span>
+<span style="color:#6c757d;font-size:0.88em">${escapeHtml(chapName)}</span>
+</div>
+${bodyHTML}
+</div>`;
             document.body.appendChild(container);
 
             // 렌더링 대기
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+            showExportProgress('시나리오 PDF 생성 중...', 30);
 
-            showExportProgress('시나리오 PDF 생성 중...', 25);
-
-            // Orphan 제어: 쪽 헤더가 페이지 하단에 너무 가깝지 않도록
-            // A4: 297mm, 여백 15mm*2 = 267mm content. 800px container에서 1px ≈ 0.334mm → 267mm ≈ 799px per page
-            const pxPerPage = 799;
-            container.querySelectorAll('.sce-page').forEach(pageEl => {
-                const top = pageEl.offsetTop;
-                const currentPageIdx = Math.floor(top / pxPerPage);
-                const posInPage = top - (currentPageIdx * pxPerPage);
-                const remaining = pxPerPage - posInPage;
-                // 남은 공간이 60px 미만이면 (헤더 + 1~2줄) 다음 페이지로 밀기
-                if (remaining > 0 && remaining < 60) {
-                    pageEl.style.marginTop = (remaining + 8) + 'px';
-                }
-            });
-
-            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-            showExportProgress('시나리오 PDF 생성 중...', 40);
+            const renderDiv = container.querySelector('div[style*="max-width"]');
 
             const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
             await new Promise((resolve, reject) => {
                 try {
-                    pdf.html(container, {
+                    pdf.html(renderDiv, {
                         callback: (doc) => resolve(doc),
                         x: 15,
                         y: 15,
-                        width: 170,           // A4 210mm - 15mm*2 = 180mm, 약간 여유
+                        width: 170,
                         windowWidth: 800,
                         autoPaging: 'text',
                         margin: [15, 15, 15, 15],
@@ -5252,7 +5265,7 @@ ${bodyHTML}`;
                 } catch (e) { reject(e); }
             });
 
-            // 오프스크린 컨테이너 제거
+            // 컨테이너 제거
             document.body.removeChild(container);
 
             showExportProgress('PDF 저장 중...', 95);
@@ -5263,8 +5276,8 @@ ${bodyHTML}`;
             hideExportProgress();
             showToast('PDF 내보내기 실패: ' + err.message, 'error');
             console.error(err);
-            // 오프스크린 컨테이너 정리
-            const leftover = document.querySelector('div[style*="left:-9999px"]');
+            // 컨테이너 정리
+            const leftover = document.querySelector('div[style*="z-index:-1"]');
             if (leftover) leftover.remove();
         }
     }
