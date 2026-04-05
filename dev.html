@@ -5202,7 +5202,7 @@ ${body}
         showToast('📄 시나리오 HTML 내보내기 완료', 'success');
     }
 
-    // ===== SCENARIO PDF EXPORT (텍스트 라이브 — 선택/복사 가능) =====
+    // ===== SCENARIO PDF EXPORT (html2canvas 이미지 분할) =====
     async function exportScenarioPDF() {
         try {
             await ensureExportLibs('pdf');
@@ -5218,57 +5218,93 @@ ${body}
 
             if (!scenarioData.length) { hideExportProgress(); showToast('출력할 데이터가 없습니다.', 'error'); return; }
 
-            showExportProgress('시나리오 PDF 생성 중...', 10);
+            showExportProgress('시나리오 PDF 생성 중...', 5);
 
             const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
             const showCutTypes = document.getElementById('sceCutTypeCheck')?.checked ?? true;
             const bodyHTML = buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary);
             const css = getScenarioExportCSS(themePrimary);
 
-            // jsPDF.html()을 위한 렌더 컨테이너 — 화면에 보이되 진행률 모달 뒤에 위치
-            const container = document.createElement('div');
-            container.style.cssText = 'position:fixed;left:0;top:0;width:800px;z-index:-1;opacity:0;pointer-events:none;overflow:hidden;';
-            container.innerHTML = `<style>${css}
-body,.sce-page,.sce-panel,.sce-dlg-row,.sce-sfx-row,.sce-scene,.sce-action,.sce-notes{all:revert}
-</style>
-<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:800px;padding:32px 24px;color:#1a1e2e;line-height:1.85;font-size:15px;">
-<style>${css}</style>
-<div style="display:flex;align-items:center;gap:10px;padding:10px 0;margin-bottom:24px;border-bottom:1px solid #e2e5ea;">
-<span style="font-weight:700;font-size:0.98em;color:#1a1e2e">${escapeHtml(pName)}</span>
-<span style="color:#adb5bd">—</span>
-<span style="color:#6c757d;font-size:0.88em">${escapeHtml(chapName)}</span>
-</div>
+            // 렌더용 iframe (CSS 완전 격리)
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;left:0;top:0;width:800px;height:600px;border:none;z-index:-1;opacity:0;pointer-events:none;';
+            document.body.appendChild(iframe);
+
+            const iDoc = iframe.contentDocument || iframe.contentWindow.document;
+            iDoc.open();
+            iDoc.write(`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<style>
+${css}
+body { margin: 0; padding: 30px 32px; }
+#viewer-header { position: static; box-shadow: none; margin: -30px -32px 24px; padding: 10px 24px; }
+</style></head><body>
+<div id="viewer-header"><span class="vh-title">${escapeHtml(pName)}</span><span class="vh-sep">—</span><span class="vh-chap">${escapeHtml(chapName)}</span></div>
 ${bodyHTML}
-</div>`;
-            document.body.appendChild(container);
+</body></html>`);
+            iDoc.close();
 
-            // 렌더링 대기
+            // iframe 로드+렌더 대기
+            await new Promise(r => setTimeout(r, 300));
             await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-            showExportProgress('시나리오 PDF 생성 중...', 30);
 
-            const renderDiv = container.querySelector('div[style*="max-width"]');
+            showExportProgress('시나리오 PDF 생성 중...', 15);
 
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            // iframe 높이를 컨텐츠에 맞춤
+            const iBody = iDoc.body;
+            const scrollH = iBody.scrollHeight;
+            iframe.style.height = scrollH + 'px';
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-            await new Promise((resolve, reject) => {
-                try {
-                    pdf.html(renderDiv, {
-                        callback: (doc) => resolve(doc),
-                        x: 15,
-                        y: 15,
-                        width: 170,
-                        windowWidth: 800,
-                        autoPaging: 'text',
-                        margin: [15, 15, 15, 15],
-                        html2canvas: { scale: 2, useCORS: true, logging: false }
-                    });
-                } catch (e) { reject(e); }
+            showExportProgress('시나리오 캡처 중...', 25);
+
+            // html2canvas로 전체 캡처
+            const scale = 2;
+            const canvas = await window.html2canvas(iBody, {
+                scale: scale,
+                backgroundColor: '#ffffff',
+                useCORS: true,
+                logging: false,
+                width: 800,
+                height: scrollH
             });
 
-            // 컨테이너 제거
-            document.body.removeChild(container);
+            // iframe 제거
+            document.body.removeChild(iframe);
 
-            showExportProgress('PDF 저장 중...', 95);
+            showExportProgress('시나리오 PDF 생성 중...', 60);
+
+            // A4 세로 210 x 297 mm, 여백 15mm
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const margin = 15;
+            const contentW = 210 - margin * 2; // 180mm
+            const contentH = 297 - margin * 2; // 267mm
+
+            // 캔버스 → PDF 페이지 분할
+            const canvasW = canvas.width;   // 800 * scale
+            const canvasH = canvas.height;
+            const mmPerPx = contentW / canvasW;
+            const pageHpx = contentH / mmPerPx; // 한 PDF 페이지에 해당하는 캔버스 높이(px)
+            const totalPages = Math.ceil(canvasH / pageHpx);
+
+            for (let p = 0; p < totalPages; p++) {
+                if (p > 0) pdf.addPage();
+                showExportProgress('PDF 페이지 생성 중...', 60 + (p / totalPages) * 35, `${p + 1} / ${totalPages} 페이지`);
+
+                const sy = p * pageHpx;
+                const sh = Math.min(pageHpx, canvasH - sy);
+
+                const sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width = canvasW;
+                sliceCanvas.height = Math.ceil(sh);
+                const ctx = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, sy, canvasW, sh, 0, 0, canvasW, Math.ceil(sh));
+
+                const imgData = sliceCanvas.toDataURL('image/jpeg', 0.92);
+                const imgH = sh * mmPerPx;
+                pdf.addImage(imgData, 'JPEG', margin, margin, contentW, imgH);
+            }
+
+            showExportProgress('PDF 저장 중...', 98);
             pdf.save(`${pName}-${chapName}_시나리오.pdf`);
             hideExportProgress();
             showToast('📄 시나리오 PDF 내보내기 완료', 'success');
@@ -5276,9 +5312,8 @@ ${bodyHTML}
             hideExportProgress();
             showToast('PDF 내보내기 실패: ' + err.message, 'error');
             console.error(err);
-            // 컨테이너 정리
-            const leftover = document.querySelector('div[style*="z-index:-1"]');
-            if (leftover) leftover.remove();
+            // iframe 정리
+            document.querySelectorAll('iframe[style*="z-index:-1"]').forEach(el => el.remove());
         }
     }
 
