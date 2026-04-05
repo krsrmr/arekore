@@ -2583,7 +2583,9 @@
         lastActivePage = null;
         if (!isUndoRedoing) { undoStack = []; redoStack = []; }
         const proj = appData.projects.find(p => p.id === pId);
+        if (!proj) return;
         const chap = proj.chapters.find(c => c.id === cId);
+        if (!chap) return;
         pagesArray = chap.pagesArray;
         const bindSel = document.getElementById('bindingSelect');
         const fpSel = document.getElementById('firstPageSelect');
@@ -2698,6 +2700,7 @@
     function deleteChapter(pId, cId, e) {
         e.stopPropagation();
         const proj = appData.projects.find(p => p.id === pId);
+        if (!proj) return;
         if (proj.chapters.length === 1) { showToast('최소 1개의 화가 필요합니다.', 'error'); return; }
         if (confirm('이 화를 삭제하시겠습니까?')) {
             proj.chapters = proj.chapters.filter(c => c.id !== cId);
@@ -2708,7 +2711,9 @@
     function renameChapter(pId, cId, e) {
         if (e) e.stopPropagation();
         const proj = appData.projects.find(p => p.id === pId);
+        if (!proj) return;
         const chap = proj.chapters.find(c => c.id === cId);
+        if (!chap) return;
         const newName = prompt("화 이름 변경:", chap.name);
         if (newName && newName.trim()) { chap.name = newName.trim(); updateMainTitle(); renderSidebar(); scheduleAutoSave(); }
     }
@@ -3418,7 +3423,8 @@
         const now = new Date();
         const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
         const blob = new Blob([JSON.stringify(getSerializedData(), null, 2)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `만화_통합데이터_${ts}.json`; a.click();
+        const a = document.createElement('a'); const objUrl = URL.createObjectURL(blob); a.href = objUrl; a.download = `만화_통합데이터_${ts}.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(objUrl), 3000);
         showToast('💾 JSON 파일로 저장했습니다.', 'success');
     }
 
@@ -3513,7 +3519,9 @@
         });
 
         const proj = appData.projects.find(p => p.id === activeProjId);
+        if (!proj) { showToast('프로젝트를 찾을 수 없습니다.', 'error'); return; }
         const chap = proj.chapters.find(c => c.id === activeChapId);
+        if (!chap) { showToast('챕터를 찾을 수 없습니다.', 'error'); return; }
         const pName = proj.name || '미제출프로젝트';
 
         const parser = new DOMParser();
