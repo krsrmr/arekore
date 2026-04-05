@@ -436,9 +436,10 @@
     }
     /* 상단바 우측 버튼 그룹: 절대 찌그러지지 않도록 */
     .toolbar-top .toolbar-save-btn,
+    .toolbar-top .mode-toggle-btn,
     .toolbar-top .toggle-menu-btn,
     .toolbar-top .kbd-hint { flex-shrink: 0; }
-    .toolbar-top .toggle-menu-btn { margin-left: auto; }
+    .toolbar-top .mode-toggle-btn { margin-left: auto; }
     .toolbar-save-btn {
         padding: 5px 11px; background: white; color: var(--text-muted);
         border: 1px solid var(--border); border-radius: 4px; font-size: 0.78em;
@@ -452,6 +453,13 @@
         padding: 6px 11px; font-size: 0.8em; border-radius: 5px; cursor: pointer; transition: opacity 0.2s; font-family: inherit;
     }
     .toggle-sidebar-btn:hover { opacity: 0.8; }
+    .mode-toggle-btn {
+        padding: 5px 11px; background: var(--theme-primary); color: #fff;
+        border: 1px solid var(--theme-primary); border-radius: 5px;
+        font-size: 0.78em; cursor: pointer; transition: all 0.15s;
+        font-weight: 700; font-family: inherit; white-space: nowrap; flex-shrink: 0;
+    }
+    .mode-toggle-btn:hover { opacity: 0.85; }
     .toggle-menu-btn {
         background: none; color: var(--text-muted); border: 1px solid var(--border);
         padding: 5px 10px; font-size: 0.78em; border-radius: 5px; cursor: pointer; transition: all 0.2s; font-family: inherit;
@@ -841,7 +849,7 @@
         .ctrl-btn, .insert-page-btn, .add-panel-btn {
             padding: 7px 12px; font-size: 0.8em; min-height: 36px;
         }
-        .toggle-sidebar-btn, .toggle-menu-btn, .toolbar-save-btn {
+        .toggle-sidebar-btn, .toggle-menu-btn, .toolbar-save-btn, .mode-toggle-btn {
             padding: 8px 14px; font-size: 0.82em; min-height: 36px;
         }
     }
@@ -1035,6 +1043,283 @@
     @media (max-width: 600px) {
         #searchPanel, #dialoguePanel { width: 100vw; }
     }
+
+    /* ===== SCENARIO EDITOR ===== */
+    #scenarioEditor {
+        display: none; flex-direction: column; flex: 1;
+        overflow: hidden; background: #fff;
+    }
+    #scenarioEditor.active { display: flex; }
+    .sce-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 24px; background: #fff; border-bottom: 1px solid var(--border);
+        flex-shrink: 0; gap: 12px;
+    }
+    .sce-header-title {
+        font-weight: 700; font-size: 0.95em; color: var(--text-main);
+        display: flex; align-items: center; gap: 6px;
+    }
+    .sce-header-actions { display: flex; gap: 8px; }
+    .sce-cut-num-toggle {
+        display: flex; align-items: center; gap: 4px;
+        font-size: 0.78em; color: var(--text-muted); cursor: pointer;
+        font-weight: 600; user-select: none; white-space: nowrap;
+    }
+    .sce-cut-num-toggle input { cursor: pointer; }
+    .sce-add-page-btn {
+        padding: 4px 12px; border-radius: 5px; border: 1px dashed var(--border);
+        background: #fff; color: var(--text-muted); font-size: 0.78em; cursor: pointer;
+        font-weight: 600; transition: all 0.15s;
+    }
+    .sce-add-page-btn:hover { border-color: var(--accent); color: var(--accent); background: #fff5f5; }
+    .sce-body {
+        flex: 1; overflow-y: auto; padding: 32px 48px;
+        display: flex; flex-direction: column; gap: 0;
+        max-width: 800px; margin: 0 auto; width: 100%;
+    }
+    .sce-body::-webkit-scrollbar { width: 5px; }
+    .sce-body::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 3px; }
+
+    /* Page block */
+    .sce-page { margin-bottom: 0; }
+    .sce-page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 0 8px; cursor: pointer; user-select: none; gap: 8px;
+        border-bottom: 2px solid #ced4da; margin-bottom: 16px;
+    }
+    .sce-page-title {
+        font-weight: 900; font-size: 0.82em; color: var(--text-main);
+        display: flex; align-items: center; gap: 6px;
+        letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .sce-page-title .sce-fold-icon {
+        font-size: 0.7em; color: var(--text-muted); transition: transform 0.2s;
+    }
+    .sce-page.folded .sce-fold-icon { transform: rotate(-90deg); }
+    .sce-page.folded .sce-page-body { display: none; }
+    .sce-page-actions {
+        display: flex; gap: 6px; align-items: center;
+        opacity: 0; transition: opacity 0.15s;
+    }
+    .sce-page-header:hover .sce-page-actions { opacity: 1; }
+    .sce-page-actions button {
+        padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+        background: #fff; font-size: 0.7em; cursor: pointer; color: var(--text-muted);
+        font-weight: 600; transition: all 0.15s;
+    }
+    .sce-page-actions button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+    .sce-page-actions .sce-del-page-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sce-page-body {
+        padding: 0 0 24px; display: flex; flex-direction: column; gap: 0;
+    }
+    .sce-page-empty {
+        text-align: center; color: var(--text-muted); font-size: 0.85em;
+        padding: 24px 0; font-style: italic;
+    }
+
+    /* ---- Panel/Cut: VIEW MODE (screenplay style) ---- */
+    .sce-panel {
+        position: relative; padding: 4px 0 4px;
+        transition: background 0.15s;
+        border-radius: 4px;
+        margin-top: 6px;
+    }
+    .sce-page-body > .sce-panel:first-child { margin-top: 0; }
+    .sce-panel.dragging { opacity: 0.3; transform: scale(0.98); }
+    .sce-panel.drag-over-top {
+        box-shadow: 0 -3px 0 0 var(--accent);
+        margin-top: 8px; transition: margin 0.2s ease, box-shadow 0.2s ease;
+    }
+    .sce-panel.drag-over-bottom {
+        box-shadow: 0 3px 0 0 var(--accent);
+        margin-bottom: 8px; transition: margin 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Hover overlay */
+    .sce-panel-hover-bar {
+        position: absolute; top: 0; right: 0;
+        display: flex; gap: 4px; padding: 4px 6px;
+        opacity: 0; transition: opacity 0.15s; z-index: 5;
+        pointer-events: none;
+    }
+    .sce-panel:hover .sce-panel-hover-bar { opacity: 1; pointer-events: auto; }
+    .sce-panel:hover { background: rgba(0,0,0,0.015); }
+    .sce-panel-hover-bar button {
+        padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
+        background: #fff; font-size: 0.7em; cursor: pointer; color: var(--text-muted);
+        font-weight: 600; transition: all 0.12s; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .sce-panel-hover-bar button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+    .sce-panel-hover-bar .sce-del-panel-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sce-panel-drag-handle {
+        cursor: grab; padding: 2px 5px; font-size: 0.75em; color: var(--text-muted);
+        border: 1px solid var(--border); border-radius: 4px; background: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .sce-panel-drag-handle:active { cursor: grabbing; }
+
+    /* View content */
+    .sce-view { line-height: 1.85; font-size: 0.92em; min-height: 20px; }
+    /* 컷 번호 구분 (체크 시) */
+    .sce-panel-cut-num-badge {
+        display: none; font-size: 0.68em; font-weight: 700;
+        padding: 1px 7px; border-radius: 3px; margin-right: 4px;
+        background: var(--theme-primary); color: #fff; letter-spacing: 0.3px;
+        vertical-align: middle;
+    }
+    .sce-body.show-cut-nums .sce-panel-cut-num-badge { display: inline-block; }
+    .sce-body.show-cut-nums .sce-panel {
+        padding-top: 4px; border-top: 1px dashed #d0d5dd; margin-top: 8px;
+    }
+    .sce-body.show-cut-nums .sce-page-body > .sce-panel:first-child { border-top: none; margin-top: 0; }
+
+    .sce-view-cut-badge {
+        display: inline-block; font-size: 0.68em; font-weight: 700;
+        padding: 1px 7px; border-radius: 3px;
+        background: var(--theme-primary); color: #fff; letter-spacing: 0.3px;
+        vertical-align: middle;
+    }
+    .sce-view-cut-badge.type-open { background: #059669; }
+    .sce-view-cut-badge.type-flashback { background: #7c3aed; }
+    .sce-view-cut-badge.type-emphasis { background: var(--accent); }
+    .sce-body.hide-cut-types .sce-view-cut-badge { visibility: hidden; }
+    .sce-view-scene { font-weight: 700; color: #14532d; margin: 2px 0; }
+    .sce-view-action { font-weight: 700; color: #713f12; margin: 2px 0; }
+    .sce-view-notes {
+        font-size: 0.85em; color: var(--text-muted); font-style: italic; margin: 2px 0;
+    }
+    .sce-view-dialogue-row {
+        display: flex; gap: 0; margin: 1px 0; padding-left: 24px;
+        align-items: baseline;
+    }
+    .sce-view-char-name {
+        font-weight: 700; min-width: 56px; flex-shrink: 0;
+        text-align: left; padding-right: 12px; font-size: 0.92em;
+    }
+    .sce-view-dlg-text { flex: 1; }
+    .sce-view-dlg-text.narration { font-style: italic; color: var(--text-muted); }
+    .sce-view-dlg-text.thought { font-style: italic; opacity: 0.7; }
+    .sce-view-dlg-hl {
+        padding: 0 3px; border-radius: 2px;
+    }
+    .sce-view-sfx-row {
+        display: flex; gap: 0; margin: 1px 0; padding-left: 24px;
+        align-items: baseline;
+    }
+    .sce-view-sfx-label {
+        font-weight: 700; min-width: 56px; flex-shrink: 0;
+        text-align: left; padding-right: 12px; font-size: 0.82em;
+        color: #9f1239;
+    }
+    .sce-view-sfx-text { flex: 1; font-weight: 600; color: #9f1239; }
+
+    /* ---- Panel/Cut: EDIT MODE ---- */
+    .sce-edit { display: none; flex-direction: column; gap: 8px; padding: 8px 0; }
+    .sce-panel.editing .sce-view { display: none; }
+    .sce-panel.editing .sce-edit { display: flex; }
+    .sce-panel.editing .sce-panel-hover-bar { display: none; }
+    .sce-panel.editing {
+        background: #fafbfc; border: 1px solid var(--border);
+        border-radius: 8px; padding: 14px 16px; margin: 4px 0;
+    }
+
+    .sce-edit-header {
+        display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+        flex-wrap: nowrap;
+    }
+    .sce-panel-type-select {
+        padding: 4px 10px; border-radius: 5px; border: 1px solid var(--border);
+        font-size: 0.82em; background: #fff; color: var(--text-main); cursor: pointer;
+        width: auto;
+    }
+    .sce-edit-save-btn {
+        margin-left: auto; padding: 5px 18px; border-radius: 5px;
+        border: 1px solid var(--theme-primary); background: var(--theme-primary);
+        color: #fff; font-size: 0.8em; font-weight: 700; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap;
+    }
+    .sce-edit-save-btn:hover { opacity: 0.85; }
+
+    .sce-field { display: flex; flex-direction: column; gap: 3px; }
+    .sce-field label {
+        font-size: 0.7em; font-weight: 700; color: var(--text-muted);
+        letter-spacing: 0.3px;
+    }
+    .sce-field textarea, .sce-field input[type="text"] {
+        padding: 6px 10px; border-radius: 5px; border: 1px solid var(--border);
+        font-size: 0.85em; font-family: inherit; resize: vertical;
+        line-height: 1.5; color: var(--text-main); transition: border-color 0.15s;
+    }
+    .sce-field textarea:focus, .sce-field input[type="text"]:focus {
+        outline: none; border-color: var(--theme-primary);
+    }
+    .sce-field textarea { min-height: 36px; }
+
+    /* Dynamic items in edit mode */
+    .sce-dyn-list { display: flex; flex-direction: column; gap: 6px; }
+    .sce-dyn-item {
+        display: flex; flex-direction: column; gap: 4px;
+        padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+        background: #fff; position: relative;
+    }
+    .sce-dyn-item[data-type="dialogue"] { border-left: 3px solid #3b82f6; }
+    .sce-dyn-item[data-type="sfx"] { border-left: 3px solid #ef4444; }
+    .sce-dyn-bar {
+        display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
+        padding-right: 28px;
+    }
+    .sce-dyn-label {
+        font-size: 0.74em; font-weight: 700; padding: 2px 8px;
+        border-radius: 3px; flex-shrink: 0; white-space: nowrap;
+    }
+    .sce-dyn-label.dlg-type-dialogue { background: #eff6ff; color: #1e40af; }
+    .sce-dyn-label.dlg-type-sfx { background: #fff1f2; color: #7f1d1d; }
+    .sce-dyn-checks { display: flex; gap: 8px; }
+    .sce-dyn-checks label {
+        font-size: 0.78em; color: var(--text-muted); display: flex; align-items: center; gap: 3px;
+        cursor: pointer; font-weight: 500; white-space: nowrap;
+    }
+    .sce-dyn-char-select {
+        padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border);
+        font-size: 0.75em; background: #fff; cursor: pointer;
+        max-width: 80px; min-width: 60px;
+    }
+    .sce-dyn-color {
+        width: 22px; height: 22px; border: 1px solid var(--border);
+        border-radius: 4px; cursor: pointer; padding: 0;
+    }
+    .sce-dyn-drag-handle {
+        color: #ced4da; cursor: grab; font-size: 0.8em; user-select: none;
+        padding: 0 2px; flex-shrink: 0;
+    }
+    .sce-dyn-drag-handle:active { cursor: grabbing; }
+    .sce-dyn-item.sce-dyn-dragging { opacity: 0.35; }
+    .sce-dyn-del {
+        position: absolute; top: 6px; right: 6px;
+        padding: 2px 8px; border-radius: 4px; border: 1px solid transparent;
+        background: none; font-size: 0.82em; cursor: pointer; color: var(--text-muted);
+        transition: all 0.15s; z-index: 2;
+    }
+    .sce-dyn-del:hover { color: var(--accent); border-color: var(--accent); }
+    .sce-dyn-item textarea {
+        padding: 5px 8px; border-radius: 4px; border: 1px solid var(--border);
+        font-size: 0.85em; font-family: inherit; resize: vertical;
+        min-height: 32px; line-height: 1.5; color: var(--text-main);
+    }
+    .sce-dyn-item textarea:focus { outline: none; border-color: var(--theme-primary); }
+    .sce-dyn-add-btns { display: flex; gap: 6px; margin-top: 2px; }
+    .sce-dyn-add-btns button {
+        padding: 5px 14px; border-radius: 5px; border: 1px dashed var(--border);
+        background: #fff; font-size: 0.8em; cursor: pointer; color: var(--text-muted);
+        font-weight: 600; transition: all 0.15s; white-space: nowrap;
+    }
+    .sce-dyn-add-btns button:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+
+    @media (max-width: 600px) {
+        .sce-body { padding: 16px; }
+        .sce-view-dialogue-row, .sce-view-sfx-row { padding-left: 8px; }
+        .sce-view-char-name { min-width: 40px; }
+    }
 </style>
 </head>
 <body>
@@ -1074,6 +1359,7 @@
                 <button class="toolbar-save-btn" onclick="saveAllPanels()" title="Ctrl+S">💾 전체 저장</button>
                 <button class="toolbar-save-btn" onclick="toggleDialoguePanel()" title="대사 목록">💬 대사</button>
                 <button class="toolbar-save-btn" onclick="toggleSearchPanel()" title="Ctrl+F 검색">🔍 검색</button>
+                <button class="mode-toggle-btn" id="modeToggleBtn" onclick="toggleEditorMode()" title="모드 전환">📝 시나리오</button>
                 <button class="toggle-menu-btn" id="toggleMenuBtn">도구 ▾</button>
                 <span class="kbd-hint" onclick="toggleShortcuts()">⌨️ 단축키</span>
             </div>
@@ -1133,11 +1419,39 @@
                         <div class="edp-row">
                             <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportViewerHTML(); toggleExportDropdown()">HTML 내보내기</button>
                         </div>
+                        <div class="edp-row">
+                            <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportContiPDF(); toggleExportDropdown()">PDF 내보내기</button>
+                        </div>
+                        <div class="edp-row">
+                            <button class="save-viewer-btn" style="width:100%;justify-content:center;background:#1e40af;" onclick="exportContiWebPZip(); toggleExportDropdown()">이미지 내보내기 (WebP)</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div id="workspace"></div>
+        <div id="scenarioEditor">
+            <div class="sce-header">
+                <div class="sce-header-title">📝 시나리오 모드</div>
+                <div class="sce-header-actions">
+                    <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutNumCheck" onchange="toggleScenarioCutNumbers()"> 컷 번호</label>
+                    <label class="sce-cut-num-toggle"><input type="checkbox" id="sceCutTypeCheck" checked onchange="toggleScenarioCutTypes()"> 컷 종류</label>
+                    <button class="sce-add-page-btn" onclick="scenarioAddPage()">＋ 쪽 추가</button>
+                    <div class="export-options-wrap" style="position:relative;">
+                        <button class="sce-add-page-btn" id="sceExportDropdownBtn" onclick="toggleSceExportDropdown()">출력 <span class="edb-arrow">▾</span></button>
+                        <div class="export-dropdown-panel" id="sceExportDropdownPanel">
+                            <div class="edp-row">
+                                <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportScenarioHTML(); toggleSceExportDropdown()">HTML 내보내기</button>
+                            </div>
+                            <div class="edp-row">
+                                <button class="save-viewer-btn" style="width:100%;justify-content:center;" onclick="exportScenarioPDF(); toggleSceExportDropdown()">인쇄 / PDF 저장</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sce-body" id="sceBody"></div>
+        </div>
     </main>
 </div>
 
@@ -1283,6 +1597,16 @@
 
 <div id="toast"></div>
 
+<div id="exportProgressModal" class="modal-overlay">
+    <div class="modal-content" style="width:360px;text-align:center;padding:28px 24px;">
+        <div id="exportProgressTitle" style="font-weight:700;font-size:0.95em;margin-bottom:14px;">내보내기 준비 중...</div>
+        <div style="background:#e2e5ea;border-radius:6px;height:10px;overflow:hidden;">
+            <div id="exportProgressBar" style="height:100%;width:0%;background:var(--theme-primary,#166534);border-radius:6px;transition:width 0.15s;"></div>
+        </div>
+        <div id="exportProgressText" style="font-size:0.82em;color:#6c757d;margin-top:8px;">0%</div>
+    </div>
+</div>
+
 <!-- Keyboard shortcuts panel -->
 <div id="shortcuts-hint">
     <div style="font-weight:700;margin-bottom:5px;color:white;font-size:0.95em;">⌨️ 단축키</div>
@@ -1314,6 +1638,51 @@
     let undoStack = [];           // Undo 스택
     let redoStack = [];           // Redo 스택
     const UNDO_MAX = 40;
+
+    // ===== EXPORT LIBS (dynamic) =====
+    const _libCache = {};
+    function loadLib(name, url) {
+        if (_libCache[name]) return Promise.resolve(_libCache[name]);
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = url;
+            s.onload = () => { _libCache[name] = true; resolve(true); };
+            s.onerror = () => reject(new Error(`${name} 로드 실패`));
+            document.head.appendChild(s);
+        });
+    }
+    async function ensureExportLibs(need) {
+        showExportProgress('라이브러리 로딩 중...', 0);
+        await loadLib('html2canvas', 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+        if (need === 'pdf') {
+            await loadLib('jspdf', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        } else if (need === 'zip') {
+            await loadLib('JSZip', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+        }
+    }
+
+    // ===== EXPORT PROGRESS =====
+    function showExportProgress(title, pct, detail) {
+        const modal = document.getElementById('exportProgressModal');
+        if (modal) modal.classList.add('show');
+        const t = document.getElementById('exportProgressTitle');
+        const b = document.getElementById('exportProgressBar');
+        const d = document.getElementById('exportProgressText');
+        if (t) t.textContent = title;
+        if (b) b.style.width = pct + '%';
+        if (d) d.textContent = detail || (Math.round(pct) + '%');
+    }
+    function hideExportProgress() {
+        const modal = document.getElementById('exportProgressModal');
+        if (modal) modal.classList.remove('show');
+    }
+    function canvasToBlob(canvas, type, quality) {
+        return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+    }
+    function checkWebPSupport() {
+        const c = document.createElement('canvas'); c.width = 1; c.height = 1;
+        return c.toDataURL('image/webp').startsWith('data:image/webp');
+    }
 
     // ===== TOAST =====
     function showToast(msg, type = '', duration = 2200) {
@@ -1365,6 +1734,12 @@
         if (wrap && !wrap.contains(e.target)) {
             document.getElementById('exportDropdownBtn')?.classList.remove('open');
             document.getElementById('exportDropdownPanel')?.classList.remove('open');
+        }
+        // 시나리오 내보내기 드롭다운 외부 클릭 시 닫기
+        const sceBtn = document.getElementById('sceExportDropdownBtn');
+        if (sceBtn && !sceBtn.closest('.export-options-wrap')?.contains(e.target)) {
+            sceBtn.classList.remove('open');
+            document.getElementById('sceExportDropdownPanel')?.classList.remove('open');
         }
     });
 
@@ -1598,6 +1973,14 @@
     function toggleExportDropdown() {
         const btn = document.getElementById('exportDropdownBtn');
         const panel = document.getElementById('exportDropdownPanel');
+        if (!btn || !panel) return;
+        const isOpen = panel.classList.contains('open');
+        btn.classList.toggle('open', !isOpen);
+        panel.classList.toggle('open', !isOpen);
+    }
+    function toggleSceExportDropdown() {
+        const btn = document.getElementById('sceExportDropdownBtn');
+        const panel = document.getElementById('sceExportDropdownPanel');
         if (!btn || !panel) return;
         const isOpen = panel.classList.contains('open');
         btn.classList.toggle('open', !isOpen);
@@ -1843,15 +2226,38 @@
         // ── Ctrl 계열 (inInput 여부 관계없이 우선 처리) ──────────────
         if (ctrl) {
             // Ctrl+Shift+Z : 되돌리기
-            if (e.shiftKey && e.code === 'KeyZ') { e.preventDefault(); redo(); return; }
+            if (e.shiftKey && e.code === 'KeyZ') {
+                e.preventDefault();
+                redo();
+                if (currentEditorMode === 'scenario') { scenarioData = collectScenarioData(); renderScenarioEditor(); }
+                return;
+            }
             // Ctrl+Shift+S : 빠른 HTML 내보내기
-            if (e.shiftKey && e.code === 'KeyS') { e.preventDefault(); exportViewerHTML(); return; }
+            if (e.shiftKey && e.code === 'KeyS') {
+                e.preventDefault();
+                if (currentEditorMode === 'scenario') exportScenarioHTML();
+                else exportViewerHTML();
+                return;
+            }
             // Ctrl+Z : 실행 취소
-            if (!e.shiftKey && e.code === 'KeyZ') { e.preventDefault(); undo(); return; }
+            if (!e.shiftKey && e.code === 'KeyZ') {
+                e.preventDefault();
+                undo();
+                if (currentEditorMode === 'scenario') { scenarioData = collectScenarioData(); renderScenarioEditor(); }
+                return;
+            }
             // Ctrl+S : 전체 저장
-            if (!e.shiftKey && e.code === 'KeyS') { e.preventDefault(); saveAllPanels(); return; }
-            // Ctrl+F : 검색 패널 토글
-            if (!e.shiftKey && e.code === 'KeyF') { e.preventDefault(); toggleSearchPanel(); return; }
+            if (!e.shiftKey && e.code === 'KeyS') {
+                e.preventDefault();
+                if (currentEditorMode === 'scenario') { scheduleAutoSave(); showToast('✅ 저장 완료', 'success'); }
+                else saveAllPanels();
+                return;
+            }
+            // Ctrl+F : 검색 패널 토글 (시나리오 모드에서는 비활성)
+            if (!e.shiftKey && e.code === 'KeyF') {
+                if (currentEditorMode === 'scenario') { e.preventDefault(); return; }
+                e.preventDefault(); toggleSearchPanel(); return;
+            }
 
             // Ctrl+C / X : 입력창 포커스 중엔 텍스트 클립보드에 양보
             if (inInput && (e.code === 'KeyC' || e.code === 'KeyX')) return;
@@ -1904,6 +2310,12 @@
         // ── 입력창 포커스 중엔 이하 단축키 비활성 ───────────────────
         if (inInput) return;
 
+        // 시나리오 모드에서는 콘티 전용 단축키 비활성
+        if (currentEditorMode === 'scenario') {
+            if (e.key === 'Escape') { toggleEditorMode(); return; }
+            return;
+        }
+
         // Escape
         if (e.key === 'Escape') {
             // 검색/대사 패널 닫기
@@ -1920,6 +2332,8 @@
             document.getElementById('shortcuts-hint')?.classList.remove('visible');
             document.getElementById('exportDropdownBtn')?.classList.remove('open');
             document.getElementById('exportDropdownPanel')?.classList.remove('open');
+            document.getElementById('sceExportDropdownBtn')?.classList.remove('open');
+            document.getElementById('sceExportDropdownPanel')?.classList.remove('open');
             return;
         }
         // ? : 단축키 목록 토글
@@ -1964,6 +2378,11 @@
 
     // ===== AUTOSAVE =====
     function getSerializedData() {
+        // 시나리오 모드에서는 먼저 데이터를 pagesArray에 동기화
+        if (currentEditorMode === 'scenario') {
+            scenarioReadFromDOM();
+            syncScenarioToPages();
+        }
         const curProj = appData.projects.find(p => p.id === activeProjId);
         const curChap = curProj ? curProj.chapters.find(c => c.id === activeChapId) : null;
         if (curChap) {
@@ -2164,12 +2583,28 @@
         lastActivePage = null;
         if (!isUndoRedoing) { undoStack = []; redoStack = []; }
         const proj = appData.projects.find(p => p.id === pId);
+        if (!proj) return;
         const chap = proj.chapters.find(c => c.id === cId);
+        if (!chap) return;
         pagesArray = chap.pagesArray;
         const bindSel = document.getElementById('bindingSelect');
         const fpSel = document.getElementById('firstPageSelect');
         if (bindSel) bindSel.value = proj.binding || chap.binding;
         if (fpSel) fpSel.value = chap.firstPageMode;
+        // 시나리오 모드였으면 데이터 동기화 후 콘티 모드로 복귀
+        if (currentEditorMode === 'scenario') {
+            scenarioReadFromDOM();
+            syncScenarioToPages();
+            currentEditorMode = 'conti';
+            document.getElementById('scenarioEditor').classList.remove('active');
+            document.getElementById('workspace').style.display = '';
+            const modeBtn = document.getElementById('modeToggleBtn');
+            if (modeBtn) { modeBtn.innerHTML = '📝 시나리오'; modeBtn.title = '시나리오 모드로 전환'; }
+            const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+            if (toggleMenuBtn) toggleMenuBtn.style.display = '';
+            const topMenu = document.getElementById('topMenu');
+            if (topMenu) topMenu.style.display = '';
+        }
         updateMainTitle(); renderSidebar(); updatePageScale(); renderPages();
     }
 
@@ -2265,6 +2700,7 @@
     function deleteChapter(pId, cId, e) {
         e.stopPropagation();
         const proj = appData.projects.find(p => p.id === pId);
+        if (!proj) return;
         if (proj.chapters.length === 1) { showToast('최소 1개의 화가 필요합니다.', 'error'); return; }
         if (confirm('이 화를 삭제하시겠습니까?')) {
             proj.chapters = proj.chapters.filter(c => c.id !== cId);
@@ -2275,7 +2711,9 @@
     function renameChapter(pId, cId, e) {
         if (e) e.stopPropagation();
         const proj = appData.projects.find(p => p.id === pId);
+        if (!proj) return;
         const chap = proj.chapters.find(c => c.id === cId);
+        if (!chap) return;
         const newName = prompt("화 이름 변경:", chap.name);
         if (newName && newName.trim()) { chap.name = newName.trim(); updateMainTitle(); renderSidebar(); scheduleAutoSave(); }
     }
@@ -2985,7 +3423,8 @@
         const now = new Date();
         const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
         const blob = new Blob([JSON.stringify(getSerializedData(), null, 2)], { type: 'application/json' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `만화_통합데이터_${ts}.json`; a.click();
+        const a = document.createElement('a'); const objUrl = URL.createObjectURL(blob); a.href = objUrl; a.download = `만화_통합데이터_${ts}.json`; a.click();
+        setTimeout(() => URL.revokeObjectURL(objUrl), 3000);
         showToast('💾 JSON 파일로 저장했습니다.', 'success');
     }
 
@@ -3062,6 +3501,10 @@
 
     // ===== EXPORT VIEWER =====
     function exportViewerHTML() {
+        // 시나리오 모드에서 내보내기 시 먼저 콘티 모드로 전환
+        if (currentEditorMode === 'scenario') {
+            switchToContiMode();
+        }
         const chkComm = document.getElementById('chkCommentary');
         const chkEdit = document.getElementById('chkEditMode');
         const withCommentary = chkComm ? chkComm.checked : false;
@@ -3076,13 +3519,15 @@
         });
 
         const proj = appData.projects.find(p => p.id === activeProjId);
+        if (!proj) { showToast('프로젝트를 찾을 수 없습니다.', 'error'); return; }
         const chap = proj.chapters.find(c => c.id === activeChapId);
+        if (!chap) { showToast('챕터를 찾을 수 없습니다.', 'error'); return; }
         const pName = proj.name || '미제출프로젝트';
 
         const parser = new DOMParser();
         const doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
 
-        ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel'].forEach(sel => {
+        ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel','#scenarioEditor'].forEach(sel => {
             const el = doc.querySelector(sel); if (el) el.remove();
         });
         if (!withEditMode) {
@@ -3494,6 +3939,228 @@ function viewerSaveAll() {
         showToast('HTML 내보내기 완료' + (opts.length ? ' (' + opts.join(', ') + ')' : ''), 'success');
     }
 
+    // ===== CONTI PDF EXPORT (2x2 A4 landscape) =====
+    async function exportContiPDF() {
+        let origScale;
+        try {
+            await ensureExportLibs('pdf');
+            const { jsPDF } = window.jspdf;
+            const proj = appData.projects.find(p => p.id === activeProjId);
+            const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+            const pName = proj ? proj.name : '프로젝트';
+            const chapName = chap ? chap.name : '챕터';
+            const binding = getEffectiveBinding();
+            const dims = getPageDims();
+            const total = pagesArray.length;
+            if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
+
+            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity 초기화)
+            if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
+            const opacityBackup = [];
+            document.querySelectorAll('.panel[style*="opacity"]').forEach(p => {
+                opacityBackup.push({ el: p, val: p.style.opacity });
+                p.style.opacity = '';
+            });
+
+            // A4 landscape: 297 x 210 mm, 2×1 배열 (가로 2쪽)
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const margin = 12;
+            const gap = 6;
+            const usableW = 297 - margin * 2;  // 273mm
+            const usableH = 210 - margin * 2;  // 186mm
+            const cellW = (usableW - gap) / 2;  // ~133.5mm
+            const cellH = usableH;              // 186mm (전체 높이)
+            const labelH = 6; // 쪽 번호 영역
+
+            // 셀 내 이미지 크기 (비율 유지)
+            const pageRatio = dims.h / dims.w;
+            let imgW = cellW;
+            let imgH = imgW * pageRatio;
+            if (imgH > cellH - labelH) {
+                imgH = cellH - labelH;
+                imgW = imgH / pageRatio;
+            }
+
+            // 임시로 page-scale 1 설정
+            origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale').trim();
+            document.documentElement.style.setProperty('--page-scale', '1');
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+            // 편집 화면과 동일한 스프레드 생성
+            const firstPageSel = document.getElementById('firstPageSelect');
+            const firstPageMode = firstPageSel ? firstPageSel.value : 'single';
+            const spreads = [];
+            let idx = 0;
+            if (firstPageMode === 'single') { spreads.push([0]); idx = 1; }
+            while (idx < total) {
+                if (idx + 1 < total) { spreads.push([idx, idx + 1]); idx += 2; }
+                else { spreads.push([idx]); idx++; }
+            }
+
+            let processed = 0;
+            for (let si = 0; si < spreads.length; si++) {
+                if (si > 0) pdf.addPage();
+                const spread = spreads[si];
+                const isFirst = (si === 0);
+                const isLast = (si === spreads.length - 1 && si > 0);
+
+                for (let j = 0; j < spread.length; j++) {
+                    const pageIdx = spread[j];
+                    processed++;
+                    showExportProgress('PDF 생성 중...', (processed / total) * 90 + 5, `${processed} / ${total} 쪽`);
+                    await new Promise(r => setTimeout(r, 10));
+
+                    const wrapper = pagesArray[pageIdx];
+                    const container = wrapper.querySelector('.panel-container');
+                    if (!container) continue;
+
+                    const canvas = await window.html2canvas(container, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        useCORS: true,
+                        logging: false
+                    });
+
+                    // 좌우 배치 결정 (편집 화면 renderPages 로직과 동일)
+                    let col;
+                    if (spread.length === 1) {
+                        // 단독 쪽: 첫 번째면 우철→왼쪽/좌철→오른쪽, 마지막이면 반대
+                        if (isFirst) col = (binding === 'right') ? 0 : 1;
+                        else if (isLast) col = (binding === 'right') ? 1 : 0;
+                        else col = 0;
+                    } else {
+                        // 쌍: 우철이면 높은번호가 왼쪽(DOM 역순)
+                        col = (binding === 'right') ? (1 - j) : j;
+                    }
+
+                    const cellX = margin + col * (cellW + gap);
+                    const cellY = margin;
+                    const imgX = cellX + (cellW - imgW) / 2;
+                    const imgY = cellY + (cellH - labelH - imgH) / 2;
+
+                    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+                    pdf.addImage(imgData, 'JPEG', imgX, imgY, imgW, imgH);
+
+                    // 쪽 테두리 (회색)
+                    pdf.setDrawColor(180, 180, 180);
+                    pdf.setLineWidth(0.3);
+                    pdf.rect(imgX, imgY, imgW, imgH);
+
+                    // 쪽 번호 (이미지 아래 중앙)
+                    pdf.setFontSize(7);
+                    pdf.setTextColor(120);
+                    pdf.text(String(pageIdx + 1), imgX + imgW / 2, imgY + imgH + labelH - 1, { align: 'center' });
+                }
+            }
+
+            // page-scale + opacity 복원
+            document.documentElement.style.setProperty('--page-scale', origScale);
+            opacityBackup.forEach(b => b.el.style.opacity = b.val);
+
+            showExportProgress('PDF 저장 중...', 98);
+            pdf.save(`${pName}-${chapName}_콘티.pdf`);
+            hideExportProgress();
+            showToast('📄 콘티 PDF 내보내기 완료', 'success');
+        } catch (err) {
+            hideExportProgress();
+            if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
+            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => b.el.style.opacity = b.val);
+            showToast('PDF 내보내기 실패: ' + err.message, 'error');
+            console.error(err);
+        }
+    }
+
+    // ===== CONTI WEBP ZIP EXPORT =====
+    async function exportContiWebPZip() {
+        let origScale;
+        try {
+            // WebP 지원 확인 (라이브러리 로드 전에 먼저 확인)
+            const webpOk = checkWebPSupport();
+            const imgType = webpOk ? 'image/webp' : 'image/png';
+            const imgExt = webpOk ? '.webp' : '.png';
+
+            if (!webpOk) {
+                const proceed = confirm(
+                    '⚠️ 이 브라우저는 WebP 형식을 지원하지 않습니다.\n\n' +
+                    'PNG 형식으로 대체 출력합니다.\n' +
+                    '• 출력 시간이 더 오래 걸릴 수 있습니다.\n' +
+                    '• 파일 용량이 상당히 커질 수 있습니다.\n\n' +
+                    '계속 진행하시겠습니까?'
+                );
+                if (!proceed) return;
+            }
+
+            await ensureExportLibs('zip');
+
+            const proj = appData.projects.find(p => p.id === activeProjId);
+            const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+            const pName = proj ? proj.name : '프로젝트';
+            const chapName = chap ? chap.name : '챕터';
+            const dims = getPageDims();
+            const total = pagesArray.length;
+            if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
+
+            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity 초기화)
+            if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
+            const opacityBackup = [];
+            document.querySelectorAll('.panel[style*="opacity"]').forEach(p => {
+                opacityBackup.push({ el: p, val: p.style.opacity });
+                p.style.opacity = '';
+            });
+
+            const zip = new JSZip();
+            const scaleFactor = 900 / dims.w;
+
+            // 임시로 page-scale 1 설정
+            origScale = getComputedStyle(document.documentElement).getPropertyValue('--page-scale').trim();
+            document.documentElement.style.setProperty('--page-scale', '1');
+            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+            for (let i = 0; i < total; i++) {
+                showExportProgress('이미지 생성 중...', ((i + 1) / total) * 85 + 5, `${i + 1} / ${total} 쪽`);
+                await new Promise(r => setTimeout(r, 10));
+
+                const wrapper = pagesArray[i];
+                const container = wrapper.querySelector('.panel-container');
+                if (!container) continue;
+
+                const canvas = await window.html2canvas(container, {
+                    scale: scaleFactor,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    logging: false
+                });
+
+                const blob = await canvasToBlob(canvas, imgType, 0.9);
+                const pageNum = i + 1;
+                const fileName = `${pName}-${chapName}_${pageNum}${imgExt}`;
+                zip.file(fileName, blob);
+            }
+
+            // page-scale + opacity 복원
+            document.documentElement.style.setProperty('--page-scale', origScale);
+            opacityBackup.forEach(b => b.el.style.opacity = b.val);
+
+            showExportProgress('ZIP 압축 중...', 92);
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${pName}-${chapName}_images.zip`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+            hideExportProgress();
+            showToast(`📦 이미지 ZIP 내보내기 완료 (${total}장${!webpOk ? ', PNG' : ''})`, 'success');
+        } catch (err) {
+            hideExportProgress();
+            if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
+            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => b.el.style.opacity = b.val);
+            showToast('이미지 내보내기 실패: ' + err.message, 'error');
+            console.error(err);
+        }
+    }
+
     // ===== IMPORT FROM EDIT HTML =====
     function importFromEditHTML(event) {
         const file = event.target.files[0];
@@ -3903,6 +4570,869 @@ function viewerSaveAll() {
         }, 150);
     }
 
+    // ===== SCENARIO EDITOR MODE =====
+    let currentEditorMode = 'conti'; // 'conti' | 'scenario'
+    let scenarioData = []; // [{panels: [panelData, ...]}, ...]
+
+    function toggleEditorMode() {
+        if (currentEditorMode === 'conti') {
+            switchToScenarioMode();
+        } else {
+            switchToContiMode();
+        }
+    }
+
+    function switchToScenarioMode() {
+        // 현재 콘티 데이터를 저장
+        saveAllPanels();
+        scenarioData = collectScenarioData();
+        currentEditorMode = 'scenario';
+
+        // UI 전환
+        document.getElementById('workspace').style.display = 'none';
+        document.getElementById('scenarioEditor').classList.add('active');
+        const btn = document.getElementById('modeToggleBtn');
+        btn.innerHTML = '🎬 콘티';
+        btn.title = '콘티 모드로 전환';
+
+        // 콘티 전용 툴바 숨김
+        const topMenu = document.getElementById('topMenu');
+        if (topMenu) topMenu.style.display = 'none';
+        const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+        if (toggleMenuBtn) toggleMenuBtn.style.display = 'none';
+
+        // 대사/검색 패널 닫기
+        closeDialoguePanel();
+        closeSearchPanel();
+
+        renderScenarioEditor();
+
+        // 시나리오 에디터에서 입력 시 auto-save 트리거
+        const sceEditor = document.getElementById('scenarioEditor');
+        sceEditor.oninput = function() { scheduleAutoSave(); };
+    }
+
+    function switchToContiMode() {
+        // 시나리오 데이터를 DOM에서 읽기
+        scenarioReadFromDOM();
+        takeSnapshot();
+        applyScenarioToConti();
+        currentEditorMode = 'conti';
+
+        // UI 전환
+        document.getElementById('scenarioEditor').classList.remove('active');
+        document.getElementById('workspace').style.display = '';
+        const btn = document.getElementById('modeToggleBtn');
+        btn.innerHTML = '📝 시나리오';
+        btn.title = '시나리오 모드로 전환';
+
+        // 콘티 전용 툴바 복원
+        const toggleMenuBtn = document.getElementById('toggleMenuBtn');
+        if (toggleMenuBtn) toggleMenuBtn.style.display = '';
+        const topMenu = document.getElementById('topMenu');
+        if (topMenu) topMenu.style.display = '';
+
+        scheduleAutoSave();
+    }
+
+    function collectScenarioData() {
+        const data = [];
+        pagesArray.forEach(wrapper => {
+            const panels = [];
+            wrapper.querySelectorAll('.panel').forEach(panel => {
+                panels.push(serializePanelData(panel));
+            });
+            data.push({ panels });
+        });
+        return data;
+    }
+
+    function renderScenarioEditor() {
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        let html = '';
+        let globalCutIdx = 0;
+
+        scenarioData.forEach((page, pageIdx) => {
+            html += `<div class="sce-page" data-page-idx="${pageIdx}">`;
+            html += `<div class="sce-page-header" onclick="scenarioTogglePage(this)">`;
+            html += `<div class="sce-page-title"><span class="sce-fold-icon">▼</span> ${pageIdx + 1}쪽</div>`;
+            html += `<div class="sce-page-actions">`;
+            html += `<button onclick="event.stopPropagation(); scenarioAddPanel(${pageIdx})">＋ 컷</button>`;
+            html += `<button class="sce-del-page-btn" onclick="event.stopPropagation(); scenarioDeletePage(${pageIdx})">쪽 삭제</button>`;
+            html += `</div></div>`;
+            html += `<div class="sce-page-body">`;
+
+            if (page.panels.length === 0) {
+                html += `<div class="sce-page-empty">컷이 없습니다. ＋ 컷 버튼으로 추가하세요.</div>`;
+            } else {
+                page.panels.forEach((pd, panelIdx) => {
+                    html += renderScenarioPanel(pd, pageIdx, panelIdx, chars, globalCutIdx);
+                    globalCutIdx++;
+                });
+            }
+
+            html += `</div></div>`;
+        });
+
+        if (scenarioData.length === 0) {
+            html = '<div class="sce-page-empty">페이지가 없습니다. ＋ 쪽 추가 버튼으로 추가하세요.</div>';
+        }
+
+        body.innerHTML = html;
+
+        // 인물 선택 드롭다운 초기화
+        body.querySelectorAll('.sce-dyn-char-select').forEach(sel => {
+            scenarioPopulateCharSelect(sel);
+        });
+
+        // 드래그 정렬 초기화
+        initScenarioDrag();
+        // 대사/효과음 드래그 초기화
+        body.querySelectorAll('.sce-dyn-item').forEach(item => initScenarioDynDrag(item));
+        // 컷 번호 토글 상태 복원
+        const cutNumCheck = document.getElementById('sceCutNumCheck');
+        if (cutNumCheck && cutNumCheck.checked) {
+            body.classList.add('show-cut-nums');
+        }
+        // 컷 종류 토글 상태 복원
+        const cutTypeCheck = document.getElementById('sceCutTypeCheck');
+        if (cutTypeCheck && !cutTypeCheck.checked) {
+            body.classList.add('hide-cut-types');
+        }
+    }
+
+    // 각본 형식 뷰 렌더링
+    function renderScenarioPanelView(pd, panelIdx, chars, globalCutIdx) {
+        let html = '';
+        let hasContent = false;
+        // 컷 번호 뱃지 (토글로 표시) — 컷 종류 뱃지와 일렬 배치
+        const cutNum = (globalCutIdx != null ? globalCutIdx : panelIdx) + 1;
+        html += `<span class="sce-panel-cut-num-badge">컷 ${cutNum}</span>`;
+        // 컷 종류 뱃지
+        if (pd.type) {
+            hasContent = true;
+            const cls = pd.type === '열린 컷' ? ' type-open' : pd.type === '회상 컷' ? ' type-flashback' : pd.type === '강조 컷' ? ' type-emphasis' : '';
+            html += `<span class="sce-view-cut-badge${cls}">${escapeHtml(pd.type)}</span> `;
+        }
+        // 장면
+        if (pd.scene) { hasContent = true; html += `<div class="sce-view-scene">${formatPanelText(pd.scene)}</div>`; }
+        // 행동
+        if (pd.action) { hasContent = true; html += `<div class="sce-view-action">${formatPanelText(pd.action)}</div>`; }
+        // 대사/효과음
+        (pd.dynamicItems || []).forEach(item => {
+            if (!item.text) return;
+            hasContent = true;
+            if (item.type === 'dialogue') {
+                const ch = chars.find(c => c.id === item.charId);
+                const nameLabel = ch ? escapeHtml(ch.name) : '';
+                const nameStyle = ch ? ` style="color:${charNameColor(ch.color)}"` : '';
+                let body = formatPanelText(item.text);
+                const hlBg = dialogueHighlightBg(item.color || '#eff6ff');
+                if (item.isThought) body = '（' + body + '）';
+                else if (!item.isNarration) body = '\u201C' + body + '\u201D';
+                const textCls = item.isNarration ? ' narration' : item.isThought ? ' thought' : '';
+                html += `<div class="sce-view-dialogue-row">`;
+                html += `<span class="sce-view-char-name"${nameStyle}>${nameLabel}</span>`;
+                html += `<span class="sce-view-dlg-text${textCls}"><span class="sce-view-dlg-hl" style="background:${hlBg}">${body}</span></span>`;
+                html += `</div>`;
+            } else if (item.type === 'sfx') {
+                html += `<div class="sce-view-sfx-row">`;
+                html += `<span class="sce-view-sfx-label">효과음</span>`;
+                html += `<span class="sce-view-sfx-text">${formatPanelText(item.text)}</span>`;
+                html += `</div>`;
+            }
+        });
+        // 특이사항
+        if (pd.notes) { hasContent = true; html += `<div class="sce-view-notes">* ${formatPanelText(pd.notes)}</div>`; }
+        // 내용 없음
+        if (!hasContent) html += `<div class="sce-view-notes" style="opacity:0.4">빈 컷</div>`;
+        return html;
+    }
+
+    function renderScenarioPanel(pd, pageIdx, panelIdx, chars, globalCutIdx) {
+        let html = `<div class="sce-panel" data-page-idx="${pageIdx}" data-panel-idx="${panelIdx}" draggable="true">`;
+
+        // 호버 시 표시되는 액션바
+        html += `<div class="sce-panel-hover-bar">`;
+        html += `<span class="sce-panel-drag-handle" title="드래그로 이동">☰</span>`;
+        html += `<button onclick="scenarioEditPanel(this)">편집</button>`;
+        html += `<button class="sce-del-panel-btn" onclick="scenarioDeletePanel(${pageIdx},${panelIdx})">삭제</button>`;
+        html += `</div>`;
+
+        // 뷰 모드 (각본 형식)
+        html += `<div class="sce-view">`;
+        html += renderScenarioPanelView(pd, panelIdx, chars, globalCutIdx);
+        html += `</div>`;
+
+        // 편집 모드 (폼)
+        html += `<div class="sce-edit">`;
+        html += `<div class="sce-edit-header">`;
+        html += `<select class="sce-panel-type-select">`;
+        html += `<option value=""${!pd.type ? ' selected' : ''}>일반 컷</option>`;
+        html += `<option value="열린 컷"${pd.type === '열린 컷' ? ' selected' : ''}>열린 컷</option>`;
+        html += `<option value="회상 컷"${pd.type === '회상 컷' ? ' selected' : ''}>회상 컷</option>`;
+        html += `<option value="강조 컷"${pd.type === '강조 컷' ? ' selected' : ''}>강조 컷</option>`;
+        html += `</select>`;
+        html += `<button class="sce-edit-save-btn" onclick="scenarioSavePanel(this)">저장</button>`;
+        html += `</div>`;
+
+        html += `<div class="sce-field"><label>장면 (배경/상황)</label><textarea class="sce-input-scene" rows="2">${escapeHtml(pd.scene || '')}</textarea></div>`;
+        html += `<div class="sce-field"><label>인물의 행동</label><textarea class="sce-input-action" rows="2">${escapeHtml(pd.action || '')}</textarea></div>`;
+
+        html += `<div class="sce-dyn-list">`;
+        (pd.dynamicItems || []).forEach((item, dynIdx) => {
+            html += renderScenarioDynItem(item, pageIdx, panelIdx, dynIdx, chars);
+        });
+        html += `</div>`;
+
+        html += `<div class="sce-dyn-add-btns">`;
+        html += `<button onclick="scenarioAddDynItemInline(this,'dialogue')">＋ 대사</button>`;
+        html += `<button onclick="scenarioAddDynItemInline(this,'sfx')">＋ 효과음</button>`;
+        html += `</div>`;
+
+        html += `<div class="sce-field"><label>특이사항</label><input type="text" class="sce-input-notes" value="${escapeHtml(pd.notes || '')}"></div>`;
+        html += `</div>`;
+
+        html += `</div>`;
+        return html;
+    }
+
+    function renderScenarioDynItem(item, pageIdx, panelIdx, dynIdx, chars) {
+        const isDlg = item.type === 'dialogue';
+        const colorVal = item.color || (isDlg ? '#eff6ff' : '#fff1f2');
+        let html = `<div class="sce-dyn-item" data-type="${item.type}" draggable="true">`;
+        html += `<div class="sce-dyn-bar">`;
+        html += `<span class="sce-dyn-drag-handle">☰</span>`;
+        html += `<span class="sce-dyn-label ${isDlg ? 'dlg-type-dialogue' : 'dlg-type-sfx'}">${isDlg ? '대사' : '효과음'}</span>`;
+
+        if (isDlg) {
+            html += `<div class="sce-dyn-checks">`;
+            html += `<label><input type="checkbox" class="sce-is-narration"${item.isNarration ? ' checked' : ''}> 나레이션</label>`;
+            html += `<label><input type="checkbox" class="sce-is-thought"${item.isThought ? ' checked' : ''}> 생각</label>`;
+            html += `</div>`;
+            html += `<select class="sce-dyn-char-select" data-char-id="${item.charId || ''}"></select>`;
+        }
+
+        html += `<input type="color" class="sce-dyn-color" value="${colorVal}">`;
+        html += `<button class="sce-dyn-del" onclick="scenarioDeleteDynItem(this)">✕</button>`;
+        html += `</div>`;
+        html += `<textarea placeholder="${isDlg ? '대사 입력' : '효과음 입력'}">${escapeHtml(item.text || '')}</textarea>`;
+        html += `</div>`;
+        return html;
+    }
+
+    function scenarioPopulateCharSelect(sel) {
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        const savedId = sel.getAttribute('data-char-id') || '';
+        let options = '<option value="">인물 선택</option>';
+        chars.forEach(c => {
+            const selected = (c.id === savedId) ? ' selected' : '';
+            options += `<option value="${c.id}"${selected}>${escapeHtml(c.name)}</option>`;
+        });
+        sel.innerHTML = options;
+        if (savedId) sel.value = savedId;
+        sel.onchange = function() {
+            this.setAttribute('data-char-id', this.value);
+            const ch = chars.find(c => c.id === this.value);
+            if (ch) {
+                const colorInput = this.closest('.sce-dyn-item')?.querySelector('.sce-dyn-color');
+                if (colorInput) colorInput.value = ch.color;
+            }
+        };
+    }
+
+    // 편집 모드 진입/저장
+    function scenarioEditPanel(btn) {
+        const panel = btn.closest('.sce-panel');
+        if (!panel) return;
+        // 다른 패널 편집 중이면 먼저 저장
+        document.querySelectorAll('.sce-panel.editing').forEach(p => {
+            if (p !== panel) scenarioSavePanelEl(p);
+        });
+        panel.classList.add('editing');
+        // 첫 번째 textarea에 포커스
+        const ta = panel.querySelector('.sce-edit textarea');
+        if (ta) setTimeout(() => ta.focus(), 50);
+    }
+
+    function scenarioSavePanel(btn) {
+        const panel = btn.closest('.sce-panel');
+        if (panel) scenarioSavePanelEl(panel);
+    }
+
+    function scenarioSavePanelEl(panelEl) {
+        if (!panelEl.classList.contains('editing')) return;
+        // DOM에서 현재 편집 데이터 읽기
+        const pd = scenarioReadPanelFromDOM(panelEl);
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        const panelIdx = parseInt(panelEl.getAttribute('data-panel-idx'));
+        // 뷰 갱신
+        const viewEl = panelEl.querySelector('.sce-view');
+        if (viewEl) viewEl.innerHTML = renderScenarioPanelView(pd, panelIdx, chars);
+        panelEl.classList.remove('editing');
+        scheduleAutoSave();
+    }
+
+    function scenarioReadPanelFromDOM(panelEl) {
+        return {
+            type: panelEl.querySelector('.sce-panel-type-select')?.value || '',
+            scene: panelEl.querySelector('.sce-input-scene')?.value || '',
+            action: panelEl.querySelector('.sce-input-action')?.value || '',
+            notes: panelEl.querySelector('.sce-input-notes')?.value || '',
+            isSaved: true,
+            dynamicItems: Array.from(panelEl.querySelectorAll('.sce-dyn-item')).map(dynEl => ({
+                type: dynEl.getAttribute('data-type'),
+                text: dynEl.querySelector('textarea')?.value || '',
+                color: dynEl.querySelector('.sce-dyn-color')?.value || '',
+                isNarration: dynEl.querySelector('.sce-is-narration')?.checked || false,
+                isThought: dynEl.querySelector('.sce-is-thought')?.checked || false,
+                charId: dynEl.querySelector('.sce-dyn-char-select')?.getAttribute('data-char-id') || ''
+            }))
+        };
+    }
+
+    // 편집 모드 내 대사/효과음 추가 (재렌더링 없이)
+    function scenarioAddDynItemInline(btn, type) {
+        const dynList = btn.closest('.sce-edit').querySelector('.sce-dyn-list');
+        if (!dynList) return;
+        const isDlg = type === 'dialogue';
+        const colorVal = isDlg ? '#eff6ff' : '#fff1f2';
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'sce-dyn-item';
+        wrapper.setAttribute('data-type', type);
+        wrapper.setAttribute('draggable', 'true');
+
+        let checksHtml = '';
+        let charHtml = '';
+        if (isDlg) {
+            checksHtml = `<div class="sce-dyn-checks">
+                <label><input type="checkbox" class="sce-is-narration"> 나레이션</label>
+                <label><input type="checkbox" class="sce-is-thought"> 생각</label>
+            </div>`;
+            charHtml = `<select class="sce-dyn-char-select" data-char-id=""></select>`;
+        }
+
+        wrapper.innerHTML = `
+            <div class="sce-dyn-bar">
+                <span class="sce-dyn-drag-handle">☰</span>
+                <span class="sce-dyn-label ${isDlg ? 'dlg-type-dialogue' : 'dlg-type-sfx'}">${isDlg ? '대사' : '효과음'}</span>
+                ${checksHtml}
+                ${charHtml}
+                <input type="color" class="sce-dyn-color" value="${colorVal}">
+                <button class="sce-dyn-del" onclick="scenarioDeleteDynItem(this)">✕</button>
+            </div>
+            <textarea placeholder="${isDlg ? '대사 입력' : '효과음 입력'}"></textarea>`;
+
+        initScenarioDynDrag(wrapper);
+
+        dynList.appendChild(wrapper);
+        // 인물 선택 초기화
+        const sel = wrapper.querySelector('.sce-dyn-char-select');
+        if (sel) scenarioPopulateCharSelect(sel);
+        // 텍스트에 포커스
+        const ta = wrapper.querySelector('textarea');
+        if (ta) setTimeout(() => ta.focus(), 30);
+    }
+
+    // 대사/효과음 드래그 정렬
+    function initScenarioDynDrag(item) {
+        item.addEventListener('mousedown', (e) => {
+            item._dynDragFromHandle = !!e.target.closest('.sce-dyn-drag-handle');
+        });
+        item.addEventListener('dragstart', (e) => {
+            if (!item._dynDragFromHandle) { e.preventDefault(); return; }
+            item.classList.add('sce-dyn-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', '');
+        });
+        item.addEventListener('dragend', () => {
+            item.classList.remove('sce-dyn-dragging');
+        });
+    }
+
+    // 글로벌: sce-dyn-list 내 드래그 정렬
+    document.addEventListener('dragover', e => {
+        const list = e.target.closest('.sce-dyn-list');
+        if (!list) return;
+        const dragging = document.querySelector('.sce-dyn-dragging');
+        if (!dragging) return;
+        e.preventDefault();
+        const after = getSceDynAfterElement(list, e.clientY);
+        if (after == null) list.appendChild(dragging);
+        else list.insertBefore(dragging, after);
+    });
+
+    function getSceDynAfterElement(container, y) {
+        return [...container.querySelectorAll('.sce-dyn-item:not(.sce-dyn-dragging)')].reduce((closest, child) => {
+            const box = child.getBoundingClientRect(), offset = y - box.top - box.height / 2;
+            return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // 패널 드래그 정렬 시스템
+    function initScenarioDrag() {
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        let draggedPanel = null;
+
+        body.querySelectorAll('.sce-panel').forEach(panel => {
+            // mousedown에서 핸들 여부 플래그 세팅
+            panel.addEventListener('mousedown', (e) => {
+                panel._dragFromHandle = !!e.target.closest('.sce-panel-drag-handle');
+            });
+
+            panel.addEventListener('dragstart', (e) => {
+                // 대사/효과음 드래그 핸들에서 시작된 경우 패널 드래그 차단 (자식 드래그 허용) — 편집 모드 체크보다 먼저!
+                if (e.target.closest('.sce-dyn-drag-handle') || e.target.closest('.sce-dyn-item')) return;
+                if (panel.classList.contains('editing')) { e.preventDefault(); return; }
+                if (!panel._dragFromHandle) { e.preventDefault(); return; }
+                draggedPanel = panel;
+                panel.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', '');
+            });
+
+            panel.addEventListener('dragend', () => {
+                panel.classList.remove('dragging');
+                body.querySelectorAll('.drag-over-top, .drag-over-bottom').forEach(el => {
+                    el.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+                draggedPanel = null;
+            });
+
+            panel.addEventListener('dragover', (e) => {
+                if (!draggedPanel || draggedPanel === panel) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                // 50ms 스로틀
+                const now = Date.now();
+                if (panel._lastDragOver && now - panel._lastDragOver < 50) return;
+                panel._lastDragOver = now;
+                // 30%/70% 데드존 — 가운데 40%에서는 인디케이터 없음
+                const rect = panel.getBoundingClientRect();
+                const relY = (e.clientY - rect.top) / rect.height;
+                panel.classList.remove('drag-over-top', 'drag-over-bottom');
+                if (relY < 0.3) {
+                    panel.classList.add('drag-over-top');
+                } else if (relY > 0.7) {
+                    panel.classList.add('drag-over-bottom');
+                }
+            });
+
+            panel.addEventListener('dragleave', () => {
+                panel.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
+
+            panel.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (!draggedPanel || draggedPanel === panel) return;
+                panel.classList.remove('drag-over-top', 'drag-over-bottom');
+
+                // 먼저 현재 편집 데이터를 scenarioData에 저장
+                scenarioReadFromDOM();
+
+                const srcPage = parseInt(draggedPanel.getAttribute('data-page-idx'));
+                const srcPanel = parseInt(draggedPanel.getAttribute('data-panel-idx'));
+                const dstPage = parseInt(panel.getAttribute('data-page-idx'));
+                const dstPanel = parseInt(panel.getAttribute('data-panel-idx'));
+
+                // 이동할 패널 데이터 추출
+                const movedData = scenarioData[srcPage].panels.splice(srcPanel, 1)[0];
+
+                // 삽입 위치 계산
+                const rect = panel.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                let insertIdx = dstPanel;
+                // srcPage와 같은 페이지이고 src가 dst보다 앞에 있었으면 인덱스 보정
+                if (srcPage === dstPage && srcPanel < dstPanel) insertIdx--;
+                if (e.clientY >= midY) insertIdx++;
+
+                scenarioData[dstPage].panels.splice(insertIdx, 0, movedData);
+                scenarioRenderKeepScroll();
+            });
+        });
+
+        // 빈 페이지 바디 위에 드롭 허용
+        body.querySelectorAll('.sce-page-body').forEach(pageBody => {
+            pageBody.addEventListener('dragover', (e) => {
+                if (!draggedPanel) return;
+                // 이미 패널 위면 패널 핸들러에 위임
+                if (e.target.closest('.sce-panel')) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+            pageBody.addEventListener('drop', (e) => {
+                if (!draggedPanel) return;
+                if (e.target.closest('.sce-panel')) return;
+                e.preventDefault();
+
+                scenarioReadFromDOM();
+                const srcPage = parseInt(draggedPanel.getAttribute('data-page-idx'));
+                const srcPanel = parseInt(draggedPanel.getAttribute('data-panel-idx'));
+                const dstPage = parseInt(pageBody.closest('.sce-page').getAttribute('data-page-idx'));
+
+                const movedData = scenarioData[srcPage].panels.splice(srcPanel, 1)[0];
+                scenarioData[dstPage].panels.push(movedData);
+                scenarioRenderKeepScroll();
+            });
+        });
+    }
+
+    // 스크롤 위치 보존하며 재렌더링
+    function scenarioRenderKeepScroll() {
+        const body = document.getElementById('sceBody');
+        const scrollTop = body ? body.scrollTop : 0;
+        renderScenarioEditor();
+        if (body) body.scrollTop = scrollTop;
+    }
+
+    function toggleScenarioCutNumbers() {
+        const chk = document.getElementById('sceCutNumCheck');
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        if (chk && chk.checked) {
+            body.classList.add('show-cut-nums');
+        } else {
+            body.classList.remove('show-cut-nums');
+        }
+    }
+
+    function toggleScenarioCutTypes() {
+        const chk = document.getElementById('sceCutTypeCheck');
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        if (chk && !chk.checked) {
+            body.classList.add('hide-cut-types');
+        } else {
+            body.classList.remove('hide-cut-types');
+        }
+    }
+
+    function buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary) {
+        let body = '';
+        let globalCutIdx = 0;
+        scenarioData.forEach((page, pageIdx) => {
+            body += `<div class="sce-page">`;
+            body += `<div class="sce-page-header">${pageIdx + 1}쪽</div>`;
+            page.panels.forEach((pd, panelIdx) => {
+                body += `<div class="sce-panel">`;
+                if (showCutNums) body += `<span class="sce-cut-num">컷 ${globalCutIdx + 1}</span> `;
+                if (pd.type && showCutTypes) {
+                    const cls = pd.type === '열린 컷' ? ' type-open' : pd.type === '회상 컷' ? ' type-flashback' : pd.type === '강조 컷' ? ' type-emphasis' : '';
+                    body += `<span class="sce-cut-badge${cls}">${escapeHtml(pd.type)}</span> `;
+                }
+                globalCutIdx++;
+                if (pd.scene) body += `<div class="sce-scene">${formatPanelText(pd.scene)}</div>`;
+                if (pd.action) body += `<div class="sce-action">${formatPanelText(pd.action)}</div>`;
+                (pd.dynamicItems || []).forEach(item => {
+                    if (!item.text) return;
+                    if (item.type === 'dialogue') {
+                        const ch = chars.find(c => c.id === item.charId);
+                        const nameLabel = ch ? escapeHtml(ch.name) : '';
+                        const nameStyle = ch ? ` style="color:${charNameColor(ch.color)}"` : '';
+                        let txt = formatPanelText(item.text);
+                        const hlBg = dialogueHighlightBg(item.color || '#eff6ff');
+                        if (item.isThought) txt = '（' + txt + '）';
+                        else if (!item.isNarration) txt = '\u201C' + txt + '\u201D';
+                        const textCls = item.isNarration ? ' narration' : item.isThought ? ' thought' : '';
+                        body += `<div class="sce-dlg-row"><span class="sce-char"${nameStyle}>${nameLabel}</span><span class="sce-dlg${textCls}"><span class="sce-dlg-hl" style="background:${hlBg}">${txt}</span></span></div>`;
+                    } else if (item.type === 'sfx') {
+                        body += `<div class="sce-sfx-row"><span class="sce-sfx-label">효과음</span><span class="sce-sfx-text">${formatPanelText(item.text)}</span></div>`;
+                    }
+                });
+                if (pd.notes) body += `<div class="sce-notes">* ${formatPanelText(pd.notes)}</div>`;
+                body += `</div>`;
+            });
+            body += `</div>`;
+        });
+        return body;
+    }
+
+    function getScenarioExportCSS(themePrimary) {
+        return `*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:800px;margin:0 auto;padding:32px 24px;color:#1a1e2e;line-height:1.85;font-size:15px}
+#viewer-header{display:flex;align-items:center;gap:10px;padding:10px 24px;background:white;border-bottom:1px solid #e2e5ea;font-family:'Noto Sans KR','Malgun Gothic',sans-serif;position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(0,0,0,0.06);margin-bottom:24px}
+.vh-title{font-weight:700;font-size:0.98em;color:#1a1e2e}
+.vh-sep{color:#adb5bd}
+.vh-chap{color:#6c757d;font-size:0.88em}
+.sce-page{margin-bottom:8px}
+.sce-page-header{font-weight:900;font-size:0.82em;padding:12px 0 8px;border-bottom:2px solid #ced4da;margin-bottom:16px;letter-spacing:0.5px}
+.sce-panel{padding:4px 0 4px;position:relative;margin-top:6px}
+.sce-page > .sce-panel:first-child{margin-top:0}
+.sce-cut-num{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:${themePrimary};color:#fff;vertical-align:middle}
+.sce-cut-badge{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:${themePrimary};color:#fff;vertical-align:middle}
+.sce-cut-badge.type-open{background:#059669}.sce-cut-badge.type-flashback{background:#7c3aed}.sce-cut-badge.type-emphasis{background:#e63946}
+.sce-scene{font-weight:700;color:#14532d;margin:2px 0}
+.sce-action{font-weight:700;color:#713f12;margin:2px 0}
+.sce-dlg-row,.sce-sfx-row{display:flex;gap:0;margin:1px 0;padding-left:24px;align-items:baseline}
+.sce-char{font-weight:700;min-width:56px;flex-shrink:0;text-align:left;padding-right:12px;font-size:0.92em}
+.sce-dlg{flex:1}.sce-dlg.narration{font-style:italic;color:#6c757d}.sce-dlg.thought{font-style:italic;opacity:0.7}
+.sce-dlg-hl{padding:0 3px;border-radius:2px}
+.sce-sfx-label{font-weight:700;min-width:56px;flex-shrink:0;text-align:left;padding-right:12px;font-size:0.82em;color:#9f1239}
+.sce-sfx-text{flex:1;font-weight:600;color:#9f1239}
+.sce-notes{font-size:0.85em;color:#6c757d;font-style:italic;margin:2px 0}
+@media print{body{padding:12px}#viewer-header{position:static;box-shadow:none}}`;
+    }
+
+    function exportScenarioHTML() {
+        // 시나리오 데이터 최신 상태로 읽기
+        scenarioReadFromDOM();
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        const themePrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#1a2332';
+        const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+        const chapName = chap ? chap.name : '시나리오';
+        const pName = proj ? proj.name : '';
+
+        const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
+        const showCutTypes = document.getElementById('sceCutTypeCheck')?.checked ?? true;
+
+        const body = buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary);
+        const css = getScenarioExportCSS(themePrimary);
+
+        const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(pName)} — ${escapeHtml(chapName)} 시나리오</title>
+<style>${css}</style></head><body>
+<div id="viewer-header"><span class="vh-title">${escapeHtml(pName)}</span><span class="vh-sep">—</span><span class="vh-chap">${escapeHtml(chapName)}</span></div>
+${body}
+</body></html>`;
+
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `${pName}-${chapName}_시나리오.html`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        showToast('📄 시나리오 HTML 내보내기 완료', 'success');
+    }
+
+    // ===== SCENARIO PDF EXPORT (브라우저 인쇄 방식) =====
+    function exportScenarioPDF() {
+        scenarioReadFromDOM();
+        const proj = appData.projects.find(p => p.id === activeProjId);
+        const chars = (proj && proj.characters) ? proj.characters : [];
+        const themePrimary = getComputedStyle(document.documentElement).getPropertyValue('--theme-primary').trim() || '#1a2332';
+        const chap = proj ? proj.chapters.find(c => c.id === activeChapId) : null;
+        const chapName = chap ? chap.name : '시나리오';
+        const pName = proj ? proj.name : '';
+
+        if (!scenarioData.length) { showToast('출력할 데이터가 없습니다.', 'error'); return; }
+
+        const showCutNums = document.getElementById('sceCutNumCheck')?.checked || false;
+        const showCutTypes = document.getElementById('sceCutTypeCheck')?.checked ?? true;
+        const bodyHTML = buildScenarioExportBody(chars, showCutNums, showCutTypes, themePrimary);
+        const css = getScenarioExportCSS(themePrimary);
+
+        const printCSS = `
+@page { size: A4 portrait; margin: 15mm; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', 'Malgun Gothic', Roboto, sans-serif;
+       max-width: 100%; margin: 0; padding: 0; color: #1a1e2e; line-height: 1.85; font-size: 13px; }
+#viewer-header { display: flex; align-items: center; gap: 10px; padding: 8px 0 10px;
+                 border-bottom: 1px solid #ccc; margin-bottom: 18px; position: static; box-shadow: none; }
+.vh-title { font-weight: 700; font-size: 0.98em; color: #1a1e2e; }
+.vh-sep { color: #adb5bd; }
+.vh-chap { color: #6c757d; font-size: 0.88em; }
+.sce-page { margin-bottom: 8px; break-inside: auto; }
+.sce-page-header { font-weight: 900; font-size: 0.82em; padding: 12px 0 8px;
+                   border-bottom: 2px solid #ced4da; margin-bottom: 16px; letter-spacing: 0.5px;
+                   break-after: avoid; }
+.sce-panel { padding: 4px 0 4px; position: relative; break-inside: avoid; margin-top: 6px; }
+.sce-page > .sce-panel:first-child { margin-top: 0; }
+.sce-cut-num { display: inline-block; font-size: 0.68em; font-weight: 700; padding: 1px 7px;
+               border-radius: 3px; background: ${themePrimary}; color: #fff; vertical-align: middle; }
+.sce-cut-badge { display: inline-block; font-size: 0.68em; font-weight: 700; padding: 1px 7px;
+                 border-radius: 3px; background: ${themePrimary}; color: #fff; vertical-align: middle; }
+.sce-cut-badge.type-open { background: #059669; }
+.sce-cut-badge.type-flashback { background: #7c3aed; }
+.sce-cut-badge.type-emphasis { background: #e63946; }
+.sce-scene { font-weight: 700; color: #14532d; margin: 2px 0; }
+.sce-action { font-weight: 700; color: #713f12; margin: 2px 0; }
+.sce-dlg-row, .sce-sfx-row { display: flex; gap: 0; margin: 1px 0; padding-left: 24px; align-items: baseline; }
+.sce-char { font-weight: 700; min-width: 56px; flex-shrink: 0; text-align: left; padding-right: 12px; font-size: 0.92em; }
+.sce-dlg { flex: 1; } .sce-dlg.narration { font-style: italic; color: #6c757d; } .sce-dlg.thought { font-style: italic; opacity: 0.7; }
+.sce-dlg-hl { padding: 0 3px; border-radius: 2px; }
+.sce-sfx-label { font-weight: 700; min-width: 56px; flex-shrink: 0; text-align: left; padding-right: 12px; font-size: 0.82em; color: #9f1239; }
+.sce-sfx-text { flex: 1; font-weight: 600; color: #9f1239; }
+.sce-notes { font-size: 0.85em; color: #6c757d; font-style: italic; margin: 2px 0; }
+`;
+
+        const printHTML = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<title>${escapeHtml(pName)} — ${escapeHtml(chapName)} 시나리오</title>
+<style>${printCSS}</style>
+</head><body>
+<div id="viewer-header"><span class="vh-title">${escapeHtml(pName)}</span><span class="vh-sep">—</span><span class="vh-chap">${escapeHtml(chapName)}</span></div>
+${bodyHTML}
+<script>
+window.onload = function() {
+    setTimeout(function() { window.print(); }, 300);
+};
+window.onafterprint = function() {
+    setTimeout(function() { window.close(); }, 200);
+};
+<\/script>
+</body></html>`;
+
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+            showToast('팝업이 차단되었습니다. 팝업 허용 후 다시 시도하세요.', 'error');
+            return;
+        }
+        printWin.document.open();
+        printWin.document.write(printHTML);
+        printWin.document.close();
+    }
+
+    function scenarioTogglePage(headerEl) {
+        const page = headerEl.closest('.sce-page');
+        if (page) page.classList.toggle('folded');
+    }
+
+    // ---- 시나리오 DOM에서 데이터 수집 ----
+    function scenarioReadFromDOM() {
+        const body = document.getElementById('sceBody');
+        if (!body) return;
+        const prevData = JSON.parse(JSON.stringify(scenarioData)); // 이전 데이터 백업 (위치 정보 보존용)
+        scenarioData = [];
+        body.querySelectorAll('.sce-page').forEach(pageEl => {
+            const panels = [];
+            pageEl.querySelectorAll('.sce-panel').forEach(panelEl => {
+                const origPageIdx = parseInt(panelEl.getAttribute('data-page-idx'));
+                const origPanelIdx = parseInt(panelEl.getAttribute('data-panel-idx'));
+                // 기존 위치 정보 복원
+                let origPd = null;
+                if (prevData[origPageIdx] && prevData[origPageIdx].panels[origPanelIdx]) {
+                    origPd = prevData[origPageIdx].panels[origPanelIdx];
+                }
+
+                const pd = {
+                    top: origPd?.top || '', left: origPd?.left || '',
+                    width: origPd?.width || '', height: origPd?.height || '',
+                    type: panelEl.querySelector('.sce-panel-type-select')?.value || '',
+                    scene: panelEl.querySelector('.sce-input-scene')?.value || '',
+                    action: panelEl.querySelector('.sce-input-action')?.value || '',
+                    notes: panelEl.querySelector('.sce-input-notes')?.value || '',
+                    isSaved: true,
+                    dynamicItems: []
+                };
+
+                panelEl.querySelectorAll('.sce-dyn-item').forEach(dynEl => {
+                    const dtype = dynEl.getAttribute('data-type');
+                    const di = {
+                        type: dtype,
+                        text: dynEl.querySelector('textarea')?.value || '',
+                        color: dynEl.querySelector('.sce-dyn-color')?.value || '',
+                        isNarration: dynEl.querySelector('.sce-is-narration')?.checked || false,
+                        isThought: dynEl.querySelector('.sce-is-thought')?.checked || false,
+                        charId: dynEl.querySelector('.sce-dyn-char-select')?.getAttribute('data-char-id') || ''
+                    };
+                    pd.dynamicItems.push(di);
+                });
+
+                panels.push(pd);
+            });
+            scenarioData.push({ panels });
+        });
+    }
+
+    // ---- 시나리오 → 콘티 적용 ----
+    function applyScenarioToConti() {
+        syncScenarioToPages();
+        renderPages();
+        updateCutNumbers();
+    }
+
+    // ---- 시나리오 편집 함수들 ----
+    function scenarioAddPage() {
+        scenarioReadFromDOM();
+        scenarioData.push({ panels: [] });
+        renderScenarioEditor();
+        // 새 페이지로 스크롤
+        const body = document.getElementById('sceBody');
+        if (body) setTimeout(() => body.scrollTop = body.scrollHeight, 50);
+    }
+
+    function scenarioDeletePage(pageIdx) {
+        if (!confirm(`${pageIdx + 1}쪽을 삭제하시겠습니까?\n해당 쪽의 모든 컷 내용이 함께 삭제됩니다.`)) return;
+        scenarioReadFromDOM();
+        scenarioData.splice(pageIdx, 1);
+        scenarioRenderKeepScroll();
+    }
+
+    function scenarioAddPanel(pageIdx) {
+        scenarioReadFromDOM();
+        if (!scenarioData[pageIdx]) return;
+        scenarioData[pageIdx].panels.push({
+            top: '', left: '', width: '', height: '',
+            type: '', scene: '', action: '', notes: '',
+            isSaved: false, dynamicItems: []
+        });
+        scenarioRenderKeepScroll();
+        // 해당 페이지 펼치기
+        const pageEl = document.querySelector(`.sce-page[data-page-idx="${pageIdx}"]`);
+        if (pageEl) {
+            pageEl.classList.remove('folded');
+            // 새 패널을 편집 모드로 열기
+            const panels = pageEl.querySelectorAll('.sce-panel');
+            const newPanel = panels[panels.length - 1];
+            if (newPanel) {
+                newPanel.classList.add('editing');
+                const ta = newPanel.querySelector('.sce-edit textarea');
+                if (ta) setTimeout(() => { ta.focus(); newPanel.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50);
+            }
+        }
+    }
+
+    function scenarioDeletePanel(pageIdx, panelIdx) {
+        scenarioReadFromDOM();
+        if (!scenarioData[pageIdx]) return;
+        scenarioData[pageIdx].panels.splice(panelIdx, 1);
+        scenarioRenderKeepScroll();
+    }
+
+    function scenarioDeleteDynItem(btn) {
+        const dynItem = btn.closest('.sce-dyn-item');
+        if (dynItem) dynItem.remove();
+    }
+
+    // 시나리오 데이터를 pagesArray DOM에 조용히 동기화 (UI 전환 없이)
+    function syncScenarioToPages() {
+        while (pagesArray.length < scenarioData.length) {
+            pagesArray.push(createPageElement());
+        }
+        while (pagesArray.length > scenarioData.length) {
+            pagesArray.pop();
+        }
+        scenarioData.forEach((page, pageIdx) => {
+            const wrapper = pagesArray[pageIdx];
+            const container = wrapper.querySelector('.panel-container');
+            container.querySelectorAll('.panel').forEach(p => p.remove());
+            page.panels.forEach((pd, panelIdx) => {
+                if (!pd.top && !pd.left) {
+                    const dims = getPageDims();
+                    const pw = 120, ph = 90, gap = 8, pad = 10;
+                    const cols = Math.floor((dims.w - pad * 2) / (pw + gap)) || 1;
+                    const row = Math.floor(panelIdx / cols);
+                    const col = panelIdx % cols;
+                    pd.top = (pad + row * (ph + gap)) + 'px';
+                    pd.left = (pad + col * (pw + gap)) + 'px';
+                    pd.width = pw + 'px';
+                    pd.height = ph + 'px';
+                }
+                if (!pd.width) pd.width = '';
+                if (!pd.height) pd.height = '';
+                const np = deserializePanelData(pd, 0);
+                container.appendChild(np);
+            });
+        });
+    }
+
     // ===== DIALOGUE LIST PANEL =====
     function toggleDialoguePanel() {
         const panel = document.getElementById('dialoguePanel');
@@ -3923,6 +5453,11 @@ function viewerSaveAll() {
         const container = document.getElementById('dlgList');
         const countEl = document.getElementById('dlgCount');
         if (!container || !countEl) return;
+        // 시나리오 모드에서는 먼저 pagesArray에 동기화
+        if (currentEditorMode === 'scenario') {
+            scenarioReadFromDOM();
+            syncScenarioToPages();
+        }
         const proj = appData.projects.find(p => p.id === activeProjId);
         const chars = (proj && proj.characters) ? proj.characters : [];
 
@@ -3989,6 +5524,15 @@ function viewerSaveAll() {
     }
 
     function goToDialoguePage(pageIdx) {
+        if (currentEditorMode === 'scenario') {
+            // 시나리오 모드: 해당 페이지 블록으로 스크롤
+            const pageEl = document.querySelector(`.sce-page[data-page-idx="${pageIdx}"]`);
+            if (pageEl) {
+                pageEl.classList.remove('folded');
+                pageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
         const wrapper = pagesArray[pageIdx];
         if (wrapper) {
             wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
