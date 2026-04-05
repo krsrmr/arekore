@@ -3954,12 +3954,17 @@ function viewerSaveAll() {
             const total = pagesArray.length;
             if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
 
-            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity 초기화)
+            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity/animation 초기화)
             if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
             const opacityBackup = [];
-            document.querySelectorAll('.panel[style*="opacity"]').forEach(p => {
-                opacityBackup.push({ el: p, val: p.style.opacity });
-                p.style.opacity = '';
+            document.querySelectorAll('.panel').forEach(p => {
+                const curOp = p.style.opacity;
+                const curAnim = p.style.animation;
+                if (curOp !== '' || curAnim !== '') {
+                    opacityBackup.push({ el: p, opacity: curOp, animation: curAnim });
+                }
+                p.style.opacity = '1';
+                p.style.animation = 'none';
             });
 
             // A4 landscape: 297 x 210 mm, 2×1 배열 (가로 2쪽)
@@ -4053,9 +4058,9 @@ function viewerSaveAll() {
                 }
             }
 
-            // page-scale + opacity 복원
+            // page-scale + opacity/animation 복원
             document.documentElement.style.setProperty('--page-scale', origScale);
-            opacityBackup.forEach(b => b.el.style.opacity = b.val);
+            opacityBackup.forEach(b => { b.el.style.opacity = b.opacity; b.el.style.animation = b.animation; });
 
             showExportProgress('PDF 저장 중...', 98);
             pdf.save(`${pName}-${chapName}_콘티.pdf`);
@@ -4064,7 +4069,7 @@ function viewerSaveAll() {
         } catch (err) {
             hideExportProgress();
             if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
-            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => b.el.style.opacity = b.val);
+            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => { b.el.style.opacity = b.opacity; b.el.style.animation = b.animation; });
             showToast('PDF 내보내기 실패: ' + err.message, 'error');
             console.error(err);
         }
@@ -4100,12 +4105,17 @@ function viewerSaveAll() {
             const total = pagesArray.length;
             if (!total) { hideExportProgress(); showToast('출력할 쪽이 없습니다.', 'error'); return; }
 
-            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity 초기화)
+            // 캡처 전 패널 상태 정리 (선택 해제, 인라인 opacity/animation 초기화)
             if (activePanel && activePanel.isConnected) { activePanel.classList.remove('panel-selected'); }
             const opacityBackup = [];
-            document.querySelectorAll('.panel[style*="opacity"]').forEach(p => {
-                opacityBackup.push({ el: p, val: p.style.opacity });
-                p.style.opacity = '';
+            document.querySelectorAll('.panel').forEach(p => {
+                const curOp = p.style.opacity;
+                const curAnim = p.style.animation;
+                if (curOp !== '' || curAnim !== '') {
+                    opacityBackup.push({ el: p, opacity: curOp, animation: curAnim });
+                }
+                p.style.opacity = '1';
+                p.style.animation = 'none';
             });
 
             const zip = new JSZip();
@@ -4137,9 +4147,9 @@ function viewerSaveAll() {
                 zip.file(fileName, blob);
             }
 
-            // page-scale + opacity 복원
+            // page-scale + opacity/animation 복원
             document.documentElement.style.setProperty('--page-scale', origScale);
-            opacityBackup.forEach(b => b.el.style.opacity = b.val);
+            opacityBackup.forEach(b => { b.el.style.opacity = b.opacity; b.el.style.animation = b.animation; });
 
             showExportProgress('ZIP 압축 중...', 92);
             const zipBlob = await zip.generateAsync({ type: 'blob' });
@@ -4155,7 +4165,7 @@ function viewerSaveAll() {
         } catch (err) {
             hideExportProgress();
             if (origScale) document.documentElement.style.setProperty('--page-scale', origScale);
-            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => b.el.style.opacity = b.val);
+            if (typeof opacityBackup !== 'undefined') opacityBackup.forEach(b => { b.el.style.opacity = b.opacity; b.el.style.animation = b.animation; });
             showToast('이미지 내보내기 실패: ' + err.message, 'error');
             console.error(err);
         }
