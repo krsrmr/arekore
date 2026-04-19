@@ -3544,8 +3544,11 @@
 
         handle.addEventListener('pointerdown', (e) => {
             if (e.button !== undefined && e.button !== 0) return;
+            // 이미 리사이즈 진행 중이면 두 번째 포인터는 무시 (멀티터치 재진입 방지)
+            if (handle._resizingPointerId !== undefined) return;
             e.preventDefault();
             e.stopPropagation();
+            handle._resizingPointerId = e.pointerId;
             try { if (typeof bringToFront === 'function') bringToFront(panel); } catch (_) {}
             try { handle.setPointerCapture(e.pointerId); } catch (_) {}
 
@@ -3556,18 +3559,22 @@
             const minW = 60, minH = 60;
 
             const onMove = (ev) => {
+                // 캡처된 포인터의 이벤트만 처리
+                if (ev.pointerId !== handle._resizingPointerId) return;
                 ev.preventDefault();
                 const dx = (ev.clientX - startX) / scale;
                 const dy = (ev.clientY - startY) / scale;
                 panel.style.width  = Math.max(minW, startW + dx) + 'px';
                 panel.style.height = Math.max(minH, startH + dy) + 'px';
             };
-            const onEnd = () => {
+            const onEnd = (ev) => {
+                if (ev && ev.pointerId !== handle._resizingPointerId) return;
                 handle.removeEventListener('pointermove', onMove);
                 handle.removeEventListener('pointerup', onEnd);
                 handle.removeEventListener('pointercancel', onEnd);
                 panel.classList.remove('panel-resizing');
-                try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+                try { handle.releasePointerCapture(handle._resizingPointerId); } catch (_) {}
+                handle._resizingPointerId = undefined;
                 try { if (typeof scheduleAutoSave === 'function') scheduleAutoSave(); } catch (_) {}
             };
             handle.addEventListener('pointermove', onMove);
@@ -3762,9 +3769,14 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(document.documentElement.outerHTML, 'text/html');
 
-        ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel','#scenarioEditor'].forEach(sel => {
+        ['#sidebar','#sidebar-backdrop','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel','#scenarioEditor'].forEach(sel => {
             const el = doc.querySelector(sel); if (el) el.remove();
         });
+        // 터치 기기 감지 리다이렉트 스크립트는 내보낸 HTML에서 제거
+        // (touch.html은 현재 이 스크립트가 없지만, 향후 동기화 시 실수로 포함되는 경우 대비)
+        doc.querySelectorAll('script[data-editor-redirect]').forEach(el => el.remove());
+        // 리사이즈 핸들은 편집/뷰어 모드 모두 제거 (뷰어에서는 불필요, 편집으로 재import 시 setupTouchResize가 재생성)
+        doc.querySelectorAll('.panel-resize-handle').forEach(el => el.remove());
         if (!withEditMode) {
             // 뷰어 모드: 툴바 전체 제거
             const toolbar = doc.querySelector('.toolbar'); if (toolbar) toolbar.remove();
@@ -3821,7 +3833,6 @@
             doc.querySelectorAll('.panel').forEach(p => {
                 p.style.resize = 'none'; p.removeAttribute('onmousedown'); p.style.cursor = 'default';
                 const a = p.querySelector('.panel-actions'); if (a) a.remove();
-                const rh = p.querySelector('.panel-resize-handle'); if (rh) rh.remove();
                 const em = p.querySelector('.edit-mode'); if (em) em.style.display = 'none';
                 const vm = p.querySelector('.view-mode'); if (vm) vm.style.display = 'flex';
             });

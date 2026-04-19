@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
+<script data-editor-redirect="1">
 (function() {
     try {
         var params = new URLSearchParams(window.location.search);
@@ -3554,6 +3554,9 @@
         ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel','#scenarioEditor'].forEach(sel => {
             const el = doc.querySelector(sel); if (el) el.remove();
         });
+        // 터치 기기 감지 리다이렉트 스크립트는 내보낸 HTML에서 제거
+        // (독립 파일로 배포될 때 touch.html 상대 경로가 존재하지 않아 404 발생하는 것 방지)
+        doc.querySelectorAll('script[data-editor-redirect]').forEach(el => el.remove());
         if (!withEditMode) {
             // 뷰어 모드: 툴바 전체 제거
             const toolbar = doc.querySelector('.toolbar'); if (toolbar) toolbar.remove();
