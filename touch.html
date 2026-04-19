@@ -1388,19 +1388,48 @@
         min-height: 32px;
     }
 
-    /* 툴바 버튼·컨트롤 탭 타겟 확장 */
+    /* 툴바 버튼·컨트롤 탭 타겟 확장 (터치 기기) */
     .ctrl-btn, .insert-page-btn, .add-panel-btn {
-        padding: 9px 14px;
-        font-size: 0.82em;
-        min-height: 38px;
+        padding: 7px 11px;
+        font-size: 0.8em;
+        min-height: 34px;
     }
+    /* 상단바 버튼은 세로 공간을 아끼면서도 탭 타겟(≥32px)은 확보 */
     .toggle-sidebar-btn, .toggle-menu-btn, .toolbar-save-btn, .mode-toggle-btn {
-        padding: 9px 14px;
-        font-size: 0.85em;
-        min-height: 38px;
+        padding: 6px 10px;
+        font-size: 0.8em;
+        min-height: 32px;
+        line-height: 1.2;
     }
-    .toolbar-top h2 { font-size: 0.92em; flex-wrap: wrap; }
-    .toolbar { padding: 10px 12px; }
+    /* ☰ 사이드바 버튼은 절대 가려지거나 잘리지 않도록 고정 */
+    .toggle-sidebar-btn {
+        flex-shrink: 0 !important;
+        position: relative;
+        z-index: 2;
+        padding: 6px 11px !important;
+        min-width: 36px;
+    }
+    /* 상단바: 화면이 좁을 때 줄바꿈 허용, 오른쪽 끝 버튼이 잘리지 않도록 */
+    .toolbar-top {
+        flex-wrap: wrap !important;
+        overflow: visible !important;
+        row-gap: 6px;
+    }
+    /* 타이틀 h2: 내부 ☰ 버튼은 유지, 텍스트만 줄임 */
+    .toolbar-top h2 {
+        font-size: 0.9em;
+        overflow: visible !important;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .toolbar-top h2 #main-title-text,
+    .toolbar-top h2 #current-chapter-title {
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        min-width: 0;
+    }
+    /* 모드 전환 버튼은 항상 우측 끝에 고정 */
+    .toolbar-top .mode-toggle-btn { margin-left: auto; }
+    .toolbar { padding: 7px 10px; }
     .toolbar-group { flex-wrap: wrap; gap: 6px; }
     .toolbar-menu { gap: 6px; }
     .kbd-hint { display: none !important; }
@@ -1470,16 +1499,28 @@
     }
 
     /* 작은 화면: 툴바 타이틀 숨김으로 공간 확보 */
-    @media (max-width: 560px) {
+    @media (max-width: 680px) {
         #main-title-text { display: none; }
         #current-chapter-title { font-size: 0.85em; }
-        .toolbar-top h2 { gap: 8px; }
+        .toolbar-top h2 { gap: 6px; }
+        /* 버튼 아이콘 텍스트 압축 */
+        .toolbar-save-btn { padding: 5px 8px !important; font-size: 0.76em !important; }
+        .mode-toggle-btn { padding: 5px 9px !important; font-size: 0.76em !important; }
+        .toggle-menu-btn { padding: 5px 8px !important; font-size: 0.76em !important; }
     }
 
-    /* 초소형 화면: 챕터명 숨김 */
-    @media (max-width: 420px) {
+    /* 초소형 화면: 챕터명 숨김, 상단바 버튼을 한 줄에 욱여넣기 */
+    @media (max-width: 480px) {
         #current-chapter-title { display: none; }
-        .toolbar-save-btn span, .mode-toggle-btn { font-size: 0.78em; }
+        .toolbar-top { gap: 5px; }
+        .toolbar { padding: 6px 8px; }
+    }
+    /* 극소형 화면: 더 압축 */
+    @media (max-width: 380px) {
+        .toolbar-save-btn, .mode-toggle-btn, .toggle-menu-btn {
+            padding: 5px 7px !important; font-size: 0.72em !important;
+        }
+        .toolbar { padding: 5px 6px; }
     }
 </style>
 </head>
@@ -2278,16 +2319,13 @@
         window.location.replace(target);
     }
     window.addEventListener('resize', () => {
+        // 터치 버전은 항상 오버레이 방식이므로 mobile-open을 자동으로 해제하지 않는다
         const sidebar = document.getElementById('sidebar');
-        if (sidebar) {
-            if (window.innerWidth <= 1100) sidebar.classList.remove('desktop-closed');
-            else sidebar.classList.remove('mobile-open');
-        }
+        if (sidebar) sidebar.classList.remove('desktop-closed');
         debouncedUpdatePageScale();
     });
-    // Close mobile sidebar on outside click
+    // Close mobile sidebar on outside click (터치 버전은 화면 너비와 무관하게 항상 동작)
     document.addEventListener('click', (e) => {
-        if (window.innerWidth > 1100) return;
         const sidebar = document.getElementById('sidebar');
         if (!sidebar || !sidebar.classList.contains('mobile-open')) return;
 
@@ -3521,7 +3559,8 @@
     }
 
     // ===== TOUCH RESIZE HANDLE =====
-    // 패널에 리사이즈 핸들이 없으면 주입하고, pointer 이벤트로 드래그 리사이즈를 연결
+    // 패널에 리사이즈 핸들이 없으면 주입하고, 터치/마우스 이벤트로 드래그 리사이즈를 연결.
+    // 모바일 호환성을 위해 pointer 이벤트가 아닌 touch*/mouse* 이중 경로를 사용한다.
     function setupTouchResize(panel) {
         if (!panel || panel._touchResizeSetup) return;
         panel._touchResizeSetup = true;
@@ -3537,50 +3576,100 @@
             handle.setAttribute('data-html2canvas-ignore', 'true');
         }
 
-        // 핸들 터치/마우스 이벤트가 패널 드래그로 전파되지 않도록 차단
-        ['touchstart', 'mousedown'].forEach(evt => {
-            handle.addEventListener(evt, (e) => { e.stopPropagation(); }, { passive: false });
-        });
+        let resizing = false;
+        let activeTouchId = null;
+        let startX = 0, startY = 0, startW = 0, startH = 0, scale = 1;
+        const minW = 60, minH = 60;
 
-        handle.addEventListener('pointerdown', (e) => {
-            if (e.button !== undefined && e.button !== 0) return;
-            // 이미 리사이즈 진행 중이면 두 번째 포인터는 무시 (멀티터치 재진입 방지)
-            if (handle._resizingPointerId !== undefined) return;
+        const begin = (clientX, clientY) => {
+            resizing = true;
+            try { if (typeof bringToFront === 'function') bringToFront(panel); } catch (_) {}
+            panel.classList.add('panel-resizing');
+            scale = (typeof getCurrentScale === 'function' ? getCurrentScale() : 1) || 1;
+            startX = clientX; startY = clientY;
+            startW = panel.offsetWidth; startH = panel.offsetHeight;
+        };
+        const move = (clientX, clientY) => {
+            if (!resizing) return;
+            const dx = (clientX - startX) / scale;
+            const dy = (clientY - startY) / scale;
+            panel.style.width  = Math.max(minW, startW + dx) + 'px';
+            panel.style.height = Math.max(minH, startH + dy) + 'px';
+        };
+        const end = () => {
+            if (!resizing) return;
+            resizing = false;
+            activeTouchId = null;
+            panel.classList.remove('panel-resizing');
+            try { if (typeof scheduleAutoSave === 'function') scheduleAutoSave(); } catch (_) {}
+        };
+
+        // --- Touch 경로 ---
+        handle.addEventListener('touchstart', (e) => {
+            if (resizing) return;
             e.preventDefault();
             e.stopPropagation();
-            handle._resizingPointerId = e.pointerId;
-            try { if (typeof bringToFront === 'function') bringToFront(panel); } catch (_) {}
-            try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+            const t = e.changedTouches[0];
+            if (!t) return;
+            activeTouchId = t.identifier;
+            begin(t.clientX, t.clientY);
 
-            panel.classList.add('panel-resizing');
-            const scale = (typeof getCurrentScale === 'function' ? getCurrentScale() : 1) || 1;
-            const startX = e.clientX, startY = e.clientY;
-            const startW = panel.offsetWidth, startH = panel.offsetHeight;
-            const minW = 60, minH = 60;
-
-            const onMove = (ev) => {
-                // 캡처된 포인터의 이벤트만 처리
-                if (ev.pointerId !== handle._resizingPointerId) return;
+            const onTouchMove = (ev) => {
+                if (!resizing) return;
+                // 여러 터치 중 시작한 손가락만 추적
+                let tt = null;
+                for (let i = 0; i < ev.changedTouches.length; i++) {
+                    if (ev.changedTouches[i].identifier === activeTouchId) {
+                        tt = ev.changedTouches[i]; break;
+                    }
+                }
+                if (!tt) return;
                 ev.preventDefault();
-                const dx = (ev.clientX - startX) / scale;
-                const dy = (ev.clientY - startY) / scale;
-                panel.style.width  = Math.max(minW, startW + dx) + 'px';
-                panel.style.height = Math.max(minH, startH + dy) + 'px';
+                move(tt.clientX, tt.clientY);
             };
-            const onEnd = (ev) => {
-                if (ev && ev.pointerId !== handle._resizingPointerId) return;
-                handle.removeEventListener('pointermove', onMove);
-                handle.removeEventListener('pointerup', onEnd);
-                handle.removeEventListener('pointercancel', onEnd);
-                panel.classList.remove('panel-resizing');
-                try { handle.releasePointerCapture(handle._resizingPointerId); } catch (_) {}
-                handle._resizingPointerId = undefined;
-                try { if (typeof scheduleAutoSave === 'function') scheduleAutoSave(); } catch (_) {}
+            const onTouchEnd = (ev) => {
+                let matched = false;
+                for (let i = 0; i < ev.changedTouches.length; i++) {
+                    if (ev.changedTouches[i].identifier === activeTouchId) {
+                        matched = true; break;
+                    }
+                }
+                if (!matched) return;
+                document.removeEventListener('touchmove', onTouchMove, { passive: false });
+                document.removeEventListener('touchend', onTouchEnd);
+                document.removeEventListener('touchcancel', onTouchEnd);
+                end();
             };
-            handle.addEventListener('pointermove', onMove);
-            handle.addEventListener('pointerup', onEnd);
-            handle.addEventListener('pointercancel', onEnd);
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd);
+            document.addEventListener('touchcancel', onTouchEnd);
+        }, { passive: false });
+
+        // --- Mouse 경로 ---
+        handle.addEventListener('mousedown', (e) => {
+            if (resizing) return;
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            begin(e.clientX, e.clientY);
+
+            const onMouseMove = (ev) => {
+                if (!resizing) return;
+                ev.preventDefault();
+                move(ev.clientX, ev.clientY);
+            };
+            const onMouseUp = (ev) => {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                end();
+            };
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
         });
+
+        // 클릭/드래그 전파 차단 (패널 onmousedown/드래그가 간섭하지 않도록)
+        handle.addEventListener('click', (e) => { e.stopPropagation(); });
+        handle.addEventListener('dragstart', (e) => { e.preventDefault(); });
     }
 
     // ===== TOUCH DRAG (mobile) =====
