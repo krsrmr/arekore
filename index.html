@@ -3,6 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script data-editor-redirect="1">
+(function() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('desktop') === '1') {
+            try { sessionStorage.setItem('forceDesktop', '1'); } catch (e) {}
+            return;
+        }
+        try { if (sessionStorage.getItem('forceDesktop') === '1') return; } catch (e) {}
+
+        var ua = navigator.userAgent || '';
+        var isMobileTabletUA = /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|BlackBerry|Opera Mini|IEMobile|webOS/i.test(ua);
+        var isIPadOS = /Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1;
+        var isCoarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+
+        if ((isMobileTabletUA || isIPadOS) && isCoarse && hasTouch) {
+            var target = 'touch.html' + (window.location.search || '') + (window.location.hash || '');
+            window.location.replace(target);
+        }
+    } catch (e) { /* 감지 실패 시 현재 페이지 유지 */ }
+})();
+</script>
 <title>만화 시나리오 & 콘티 에디터</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -3531,6 +3554,9 @@
         ['#sidebar','#settingsModal','#toast','#shortcuts-hint','#charModal','#projMemoModal','#searchPanel','#dialoguePanel','#scenarioEditor'].forEach(sel => {
             const el = doc.querySelector(sel); if (el) el.remove();
         });
+        // 터치 기기 감지 리다이렉트 스크립트는 내보낸 HTML에서 제거
+        // (독립 파일로 배포될 때 touch.html 상대 경로가 존재하지 않아 404 발생하는 것 방지)
+        doc.querySelectorAll('script[data-editor-redirect]').forEach(el => el.remove());
         if (!withEditMode) {
             // 뷰어 모드: 툴바 전체 제거
             const toolbar = doc.querySelector('.toolbar'); if (toolbar) toolbar.remove();
