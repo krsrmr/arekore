@@ -3,30 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-(function() {
-    try {
-        var params = new URLSearchParams(window.location.search);
-        if (params.get('desktop') === '1') {
-            try { sessionStorage.setItem('forceDesktop', '1'); } catch (e) {}
-            return;
-        }
-        try { if (sessionStorage.getItem('forceDesktop') === '1') return; } catch (e) {}
-
-        var ua = navigator.userAgent || '';
-        var isMobileTabletUA = /Android|iPhone|iPad|iPod|Mobile|Tablet|Silk|BlackBerry|Opera Mini|IEMobile|webOS/i.test(ua);
-        var isIPadOS = /Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1;
-        var isCoarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
-        var hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
-
-        if ((isMobileTabletUA || isIPadOS) && isCoarse && hasTouch) {
-            var target = 'touch.html' + (window.location.search || '') + (window.location.hash || '');
-            window.location.replace(target);
-        }
-    } catch (e) { /* 감지 실패 시 현재 페이지 유지 */ }
-})();
-</script>
-<title>만화 시나리오 & 콘티 에디터</title>
+<title>만화 시나리오 & 콘티 에디터 (터치)</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
     :root {
@@ -1344,6 +1321,166 @@
         .sce-view-dialogue-row, .sce-view-sfx-row { padding-left: 8px; }
         .sce-view-char-name { min-width: 40px; }
     }
+
+    /* ==========================================================
+       ===== TOUCH VERSION OVERRIDES (touch.html 전용) ==========
+       ========================================================== */
+
+    /* 더블탭 확대 방지 + 기본 터치 동작 */
+    html, body { touch-action: manipulation; }
+
+    /* 브라우저 네이티브 리사이즈 비활성화 (터치에서 동작 안 함) */
+    .panel {
+        resize: none !important;
+        cursor: default;
+    }
+    .panel:active { cursor: default; }
+
+    /* 커스텀 리사이즈 핸들 (컷 우하단) */
+    .panel-resize-handle {
+        position: absolute;
+        right: 0; bottom: 0;
+        width: 32px; height: 32px;
+        cursor: nwse-resize;
+        touch-action: none;
+        z-index: 8;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .panel-resize-handle::before {
+        content: ''; position: absolute;
+        right: 3px; bottom: 3px;
+        width: 0; height: 0;
+        border-style: solid;
+        border-width: 0 0 15px 15px;
+        border-color: transparent transparent rgba(26, 35, 50, 0.42) transparent;
+        transition: border-color 0.15s, transform 0.15s;
+        pointer-events: none;
+    }
+    .panel-resize-handle::after {
+        content: ''; position: absolute;
+        right: 6px; bottom: 8px;
+        width: 4px; height: 4px;
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 1px;
+        pointer-events: none;
+    }
+    .panel-resize-handle:active::before,
+    .panel.panel-resizing .panel-resize-handle::before {
+        border-color: transparent transparent var(--accent) transparent;
+        transform: scale(1.12);
+    }
+    .panel.type-emphasis .panel-resize-handle::before {
+        border-bottom-color: rgba(230, 57, 70, 0.6);
+    }
+    /* 리사이즈 핸들이 추가되면서 컷 번호 배지와 겹치므로 좌측으로 이동 */
+    .cut-seq-badge { right: auto !important; left: 5px !important; bottom: 5px !important; }
+    /* 리사이즈 중에는 panel-body 상호작용 잠시 차단 */
+    .panel.panel-resizing .panel-body { pointer-events: none; }
+    .panel.panel-resizing { user-select: none; -webkit-user-select: none; }
+
+    /* 패널 액션 버튼 항상 표시 + 탭 타겟 확장 */
+    .panel-actions { opacity: 1 !important; }
+    .action-btn {
+        padding: 7px 11px;
+        font-size: 0.74em;
+        min-height: 32px;
+    }
+
+    /* 툴바 버튼·컨트롤 탭 타겟 확장 */
+    .ctrl-btn, .insert-page-btn, .add-panel-btn {
+        padding: 9px 14px;
+        font-size: 0.82em;
+        min-height: 38px;
+    }
+    .toggle-sidebar-btn, .toggle-menu-btn, .toolbar-save-btn, .mode-toggle-btn {
+        padding: 9px 14px;
+        font-size: 0.85em;
+        min-height: 38px;
+    }
+    .toolbar-top h2 { font-size: 0.92em; flex-wrap: wrap; }
+    .toolbar { padding: 10px 12px; }
+    .toolbar-group { flex-wrap: wrap; gap: 6px; }
+    .toolbar-menu { gap: 6px; }
+    .kbd-hint { display: none !important; }
+    #shortcuts-hint { display: none !important; }
+
+    /* 사이드바: 터치 기기에서는 기본 오버레이 방식으로 고정 */
+    #sidebar {
+        position: absolute; height: 100vh;
+        transform: translateX(-100%);
+        width: var(--sidebar-width);
+        max-width: 85vw;
+        opacity: 1 !important;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2500;
+    }
+    #sidebar.mobile-open { transform: translateX(0); }
+    #sidebar.desktop-closed { transform: translateX(-100%); width: var(--sidebar-width) !important; min-width: 0 !important; opacity: 1 !important; }
+
+    /* 사이드바 열렸을 때 뒤쪽 오버레이 */
+    #sidebar-backdrop {
+        display: none; position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.35);
+        z-index: 2400;
+        animation: fadeIn 0.2s;
+    }
+    #sidebar-backdrop.show { display: block; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* 사이드바 내부 항목 탭 타겟 */
+    .chapter-item, .project-folder-header {
+        padding-top: 9px; padding-bottom: 9px;
+    }
+    .add-chapter-btn, .add-char-btn { padding: 9px 12px; min-height: 36px; }
+    .add-project-btn, .settings-btn { padding: 11px; font-size: 0.9em; }
+
+    /* 팝업/모달 터치 여백 */
+    .modal-content { max-width: calc(100vw - 24px); }
+
+    /* 워크스페이스 여백 축소 (화면 절약) */
+    #workspace { padding: 12px 10px 42px; gap: 18px; }
+
+    /* 페이지 푸터 버튼 간격 증가 */
+    .page-footer { flex-wrap: wrap; gap: 6px; padding: 7px 10px; }
+    .page-controls { gap: 6px; }
+
+    /* 내보내기 드롭다운 모달식 패널도 터치 친화 */
+    .export-dropdown-panel .save-viewer-btn { padding: 10px; font-size: 0.88em; }
+
+    /* 데스크탑 버전 스위처 버튼 */
+    .desktop-switch-btn {
+        margin: 8px 10px 4px;
+        padding: 9px 12px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.75);
+        border-radius: 7px;
+        font-size: 0.78em;
+        font-family: inherit;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+    }
+    .desktop-switch-btn:hover, .desktop-switch-btn:active {
+        background: rgba(255, 255, 255, 0.14);
+        color: white;
+    }
+
+    /* 작은 화면: 툴바 타이틀 숨김으로 공간 확보 */
+    @media (max-width: 560px) {
+        #main-title-text { display: none; }
+        #current-chapter-title { font-size: 0.85em; }
+        .toolbar-top h2 { gap: 8px; }
+    }
+
+    /* 초소형 화면: 챕터명 숨김 */
+    @media (max-width: 420px) {
+        #current-chapter-title { display: none; }
+        .toolbar-save-btn span, .mode-toggle-btn { font-size: 0.78em; }
+    }
 </style>
 </head>
 <body>
@@ -1368,9 +1505,11 @@
             </div>
             <button class="add-project-btn" onclick="addProject()">＋ 새 프로젝트</button>
             <button class="settings-btn" onclick="openSettings()">⚙️ 설정</button>
+            <button class="desktop-switch-btn" onclick="switchToDesktopVersion()">🖥 데스크탑 버전으로 보기</button>
             <div class="autosave-badge" id="autosaveBadge">자동 저장 대기 중...</div>
         </div>
     </aside>
+    <div id="sidebar-backdrop" onclick="toggleSidebar()"></div>
 
     <main id="main-content">
         <div class="toolbar">
@@ -2124,11 +2263,19 @@
         if (_toggleSidebarLock) return;
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
-        if (window.innerWidth > 1100) sidebar.classList.toggle('desktop-closed');
-        else sidebar.classList.toggle('mobile-open');
+        // 터치 버전: 화면 크기와 무관하게 항상 오버레이(mobile-open) 방식으로 동작
+        sidebar.classList.toggle('mobile-open');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (backdrop) backdrop.classList.toggle('show', sidebar.classList.contains('mobile-open'));
         setTimeout(updatePageScale, 320);
         _toggleSidebarLock = true;
         setTimeout(() => { _toggleSidebarLock = false; }, 400);
+    }
+    function switchToDesktopVersion() {
+        try { sessionStorage.setItem('forceDesktop', '1'); } catch (e) {}
+        // hash는 유지해 현재 상태를 가능한 한 보존
+        const target = 'index.html?desktop=1' + (window.location.hash || '');
+        window.location.replace(target);
     }
     window.addEventListener('resize', () => {
         const sidebar = document.getElementById('sidebar');
@@ -2153,6 +2300,8 @@
 
         if (!sidebar.contains(e.target) && !e.target.closest('.toggle-sidebar-btn')) {
             sidebar.classList.remove('mobile-open');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (backdrop) backdrop.classList.remove('show');
             setTimeout(updatePageScale, 320);
         }
     });
@@ -3106,6 +3255,7 @@
                     <button class="action-btn save-btn" onclick="savePanel(this)">저장</button>
                     <button class="action-btn delete-btn" onclick="removePanel(this)">삭제</button>
                 </div>
+                <div class="panel-resize-handle" aria-label="컷 크기 조정" data-html2canvas-ignore="true"></div>
                 <div class="panel-body">
                     <div class="edit-mode">
                         <div class="form-group">
@@ -3370,8 +3520,67 @@
         };
     }
 
+    // ===== TOUCH RESIZE HANDLE =====
+    // 패널에 리사이즈 핸들이 없으면 주입하고, pointer 이벤트로 드래그 리사이즈를 연결
+    function setupTouchResize(panel) {
+        if (!panel || panel._touchResizeSetup) return;
+        panel._touchResizeSetup = true;
+
+        let handle = panel.querySelector('.panel-resize-handle');
+        if (!handle) {
+            handle = document.createElement('div');
+            handle.className = 'panel-resize-handle';
+            handle.setAttribute('aria-label', '컷 크기 조정');
+            handle.setAttribute('data-html2canvas-ignore', 'true');
+            panel.appendChild(handle);
+        } else if (!handle.hasAttribute('data-html2canvas-ignore')) {
+            handle.setAttribute('data-html2canvas-ignore', 'true');
+        }
+
+        // 핸들 터치/마우스 이벤트가 패널 드래그로 전파되지 않도록 차단
+        ['touchstart', 'mousedown'].forEach(evt => {
+            handle.addEventListener(evt, (e) => { e.stopPropagation(); }, { passive: false });
+        });
+
+        handle.addEventListener('pointerdown', (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            try { if (typeof bringToFront === 'function') bringToFront(panel); } catch (_) {}
+            try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+
+            panel.classList.add('panel-resizing');
+            const scale = (typeof getCurrentScale === 'function' ? getCurrentScale() : 1) || 1;
+            const startX = e.clientX, startY = e.clientY;
+            const startW = panel.offsetWidth, startH = panel.offsetHeight;
+            const minW = 60, minH = 60;
+
+            const onMove = (ev) => {
+                ev.preventDefault();
+                const dx = (ev.clientX - startX) / scale;
+                const dy = (ev.clientY - startY) / scale;
+                panel.style.width  = Math.max(minW, startW + dx) + 'px';
+                panel.style.height = Math.max(minH, startH + dy) + 'px';
+            };
+            const onEnd = () => {
+                handle.removeEventListener('pointermove', onMove);
+                handle.removeEventListener('pointerup', onEnd);
+                handle.removeEventListener('pointercancel', onEnd);
+                panel.classList.remove('panel-resizing');
+                try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+                try { if (typeof scheduleAutoSave === 'function') scheduleAutoSave(); } catch (_) {}
+            };
+            handle.addEventListener('pointermove', onMove);
+            handle.addEventListener('pointerup', onEnd);
+            handle.addEventListener('pointercancel', onEnd);
+        });
+    }
+
     // ===== TOUCH DRAG (mobile) =====
     function addTouchDrag(panel) {
+        // 리사이즈 핸들은 모든 경로에서 연결되도록 여기서도 한 번 호출
+        try { setupTouchResize(panel); } catch (_) {}
+
         let dragMode = false;
         let longPressTimer = null;
         let startX, startY;
@@ -3379,6 +3588,8 @@
         panel.addEventListener('touchstart', (e) => {
             const tag = e.target.tagName.toLowerCase();
             if (['button','input','select','textarea'].includes(tag)) return;
+            // 리사이즈 핸들 터치는 패널 드래그가 처리하지 않도록 스킵
+            if (e.target.closest && e.target.closest('.panel-resize-handle')) return;
             bringToFront(panel);
             const touch = e.touches[0];
             startX = touch.clientX; startY = touch.clientY;
@@ -3610,6 +3821,7 @@
             doc.querySelectorAll('.panel').forEach(p => {
                 p.style.resize = 'none'; p.removeAttribute('onmousedown'); p.style.cursor = 'default';
                 const a = p.querySelector('.panel-actions'); if (a) a.remove();
+                const rh = p.querySelector('.panel-resize-handle'); if (rh) rh.remove();
                 const em = p.querySelector('.edit-mode'); if (em) em.style.display = 'none';
                 const vm = p.querySelector('.view-mode'); if (vm) vm.style.display = 'flex';
             });
