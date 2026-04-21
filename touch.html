@@ -1386,6 +1386,14 @@
         font-size: 0.74em;
         min-height: 32px;
     }
+    /* 대사/효과음 순서 변경 핸들: 터치 기기에서 충분한 탭 영역 + 스크롤 방지 */
+    .drag-handle {
+        touch-action: none;
+        padding: 6px 8px;
+        font-size: 1em;
+        color: #9ca3af;
+        cursor: grab;
+    }
 
     /* 툴바 버튼·컨트롤 탭 타겟 확장 (터치 기기) */
     .ctrl-btn, .insert-page-btn, .add-panel-btn {
@@ -3384,6 +3392,7 @@
         }
         item.addEventListener('dragstart', () => item.classList.add('dragging'));
         item.addEventListener('dragend', () => item.classList.remove('dragging'));
+        setupDynamicItemTouchSort(item);
         list.appendChild(item);
     }
 
@@ -3746,6 +3755,41 @@
             const box = child.getBoundingClientRect(), offset = y - box.top - box.height / 2;
             return (offset < 0 && offset > closest.offset) ? { offset, element: child } : closest;
         }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // 터치 기기용 대사/효과음 아이템 순서 변경
+    function setupDynamicItemTouchSort(item) {
+        const handle = item.querySelector('.drag-handle');
+        if (!handle) return;
+        handle.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation(); // 패널 longPress 드래그 방지
+            item.classList.add('dragging');
+            const onMove = (ev) => {
+                ev.preventDefault();
+                const t = ev.touches[0];
+                const list = item.closest('.dynamic-list');
+                if (!list) return;
+                // 아이템을 잠깐 숨겨 손가락 아래 요소를 감지
+                item.style.visibility = 'hidden';
+                const el = document.elementFromPoint(t.clientX, t.clientY);
+                item.style.visibility = '';
+                const targetList = (el && el.closest('.dynamic-list')) || list;
+                const after = getDragAfterElement(targetList, t.clientY);
+                if (after == null) targetList.appendChild(item);
+                else if (after !== item) targetList.insertBefore(item, after);
+            };
+            const onEnd = () => {
+                document.removeEventListener('touchmove', onMove, { passive: false });
+                document.removeEventListener('touchend', onEnd);
+                document.removeEventListener('touchcancel', onEnd);
+                item.classList.remove('dragging');
+                try { if (typeof scheduleAutoSave === 'function') scheduleAutoSave(); } catch (_) {}
+            };
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
+            document.addEventListener('touchcancel', onEnd);
+        }, { passive: false });
     }
 
     // ===== JSON SAVE/LOAD =====
