@@ -840,9 +840,8 @@
 
     /* ===== MOBILE / TOUCH RESPONSIVE ===== */
 
-    /* 터치 기기: panel-actions 항상 표시 (hover 없음) */
+    /* 터치 기기: 선택된 컷에서만 panel-actions 표시 (위 touch-specific block에서 처리) */
     @media (hover: none) {
-        .panel-actions { opacity: 1 !important; }
         .panel { resize: none; cursor: default; }
         .panel:active { cursor: default; }
         .action-btn { padding: 6px 10px; font-size: 0.76em; }
@@ -1380,8 +1379,8 @@
     .panel.panel-resizing .panel-body { pointer-events: none; }
     .panel.panel-resizing { user-select: none; -webkit-user-select: none; }
 
-    /* 패널 액션 버튼 항상 표시 + 탭 타겟 확장 */
-    .panel-actions { opacity: 1 !important; }
+     /* 패널 액션 버튼: 선택(탭)된 컷에만 표시 */
+    .panel.panel-selected .panel-actions { opacity: 1; }
     .action-btn {
         padding: 7px 11px;
         font-size: 0.74em;
