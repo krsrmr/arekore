@@ -1130,11 +1130,12 @@
     }
     .sce-panel::before {
         content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-        width: 0; background: var(--theme-primary);
+        width: 0; background: #d1d5db;
         transition: width 0.15s ease;
         border-radius: 0 2px 2px 0;
     }
-    .sce-panel.editing::before { width: 3px; }
+    .sce-panel:hover::before { width: 3px; }
+    .sce-panel.editing::before { width: 3px; background: var(--theme-primary); }
     .sce-panel + .sce-panel {
         border-top: 1px solid #f0f0f0; padding-top: 8px;
     }
@@ -1198,7 +1199,8 @@
     .sce-view-cut-badge.type-open { background: #059669; }
     .sce-view-cut-badge.type-flashback { background: #7c3aed; }
     .sce-view-cut-badge.type-emphasis { background: var(--accent); }
-    .sce-body.hide-cut-types .sce-view-cut-badge { visibility: hidden; }
+    .sce-body.hide-cut-types .sce-view-cut-badge { display: none; }
+    .sce-body.hide-cut-types:not(.show-cut-nums) .sce-view-badge-line { margin-bottom: 0; }
     .sce-view-scene { font-weight: 700; color: #1f2937; margin: 2px 0; }
     .sce-view-action { font-weight: 400; color: #1f2937; margin: 2px 0; }
     .sce-view-label {
