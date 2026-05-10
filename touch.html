@@ -1083,16 +1083,26 @@
     .sce-page { margin-bottom: 0; }
     .sce-page-header {
         display: flex; align-items: center; justify-content: space-between;
-        padding: 12px 0 8px; cursor: pointer; user-select: none; gap: 8px;
-        border-bottom: 2px solid #ced4da; margin-bottom: 16px;
+        padding: 14px 0 10px; cursor: pointer; user-select: none; gap: 8px;
+        position: relative; margin-bottom: 18px;
+    }
+    .sce-page-header::after {
+        content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+        background: linear-gradient(90deg, var(--theme-primary) 0%, #ced4da 40%, transparent 100%);
+        opacity: 0.35; border-radius: 1px;
     }
     .sce-page-title {
-        font-weight: 900; font-size: 0.82em; color: var(--text-main);
-        display: flex; align-items: center; gap: 6px;
-        letter-spacing: 0.5px; text-transform: uppercase;
+        font-weight: 700; font-size: 0.88em; color: var(--text-main);
+        display: flex; align-items: center; gap: 8px;
+    }
+    .sce-page-num-badge {
+        display: inline-flex; align-items: center;
+        background: var(--theme-primary); color: #fff;
+        border-radius: 4px; padding: 2px 9px; font-size: 0.82em;
+        font-weight: 800; letter-spacing: 0.3px;
     }
     .sce-page-title .sce-fold-icon {
-        font-size: 0.7em; color: var(--text-muted); transition: transform 0.2s;
+        font-size: 0.75em; color: var(--text-muted); transition: transform 0.2s;
     }
     .sce-page.folded .sce-fold-icon { transform: rotate(-90deg); }
     .sce-page.folded .sce-page-body { display: none; }
@@ -1118,10 +1128,15 @@
 
     /* ---- Panel/Cut: VIEW MODE (screenplay style) ---- */
     .sce-panel {
-        position: relative; padding: 0 0 4px;
-        transition: background 0.15s;
-        border-radius: 4px;
-        margin-top: 10px;
+        position: relative;
+        padding: 10px 0 8px 14px;
+        transition: background 0.15s, border-left-color 0.18s;
+        border-radius: 0 4px 4px 0;
+        margin-top: 0;
+        border-left: 3px solid #e5e7eb;
+    }
+    .sce-panel + .sce-panel {
+        border-top: 1px solid #f0f0f0; padding-top: 12px;
     }
     .sce-page-body > .sce-panel:first-child { margin-top: 0; }
     .sce-view-badge-line { min-height: 20px; line-height: 20px; }
@@ -1137,13 +1152,13 @@
 
     /* Hover overlay */
     .sce-panel-hover-bar {
-        position: absolute; top: 0; right: 0;
+        position: absolute; top: 6px; right: 0;
         display: flex; gap: 4px; padding: 4px 6px;
         opacity: 0; transition: opacity 0.15s; z-index: 5;
         pointer-events: none;
     }
     .sce-panel:hover .sce-panel-hover-bar { opacity: 1; pointer-events: auto; }
-    .sce-panel:hover { background: rgba(0,0,0,0.015); }
+    .sce-panel:hover { background: rgba(0,0,0,0.012); border-left-color: #cbd5e1; }
     .sce-panel-hover-bar button {
         padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
         background: #fff; font-size: 0.7em; cursor: pointer; color: var(--text-muted);
@@ -1169,7 +1184,7 @@
     }
     .sce-body.show-cut-nums .sce-panel-cut-num-badge { display: inline-block; }
     .sce-body.show-cut-nums .sce-panel {
-        padding-top: 4px; border-top: 1px dashed #d0d5dd; margin-top: 8px;
+        padding-top: 10px;
     }
     .sce-body.show-cut-nums .sce-page-body > .sce-panel:first-child { border-top: none; margin-top: 0; }
 
@@ -1183,8 +1198,15 @@
     .sce-view-cut-badge.type-flashback { background: #7c3aed; }
     .sce-view-cut-badge.type-emphasis { background: var(--accent); }
     .sce-body.hide-cut-types .sce-view-cut-badge { visibility: hidden; }
-    .sce-view-scene { font-weight: 700; color: #14532d; margin: 2px 0; }
-    .sce-view-action { font-weight: 700; color: #713f12; margin: 2px 0; }
+    .sce-view-scene { font-weight: 700; color: #1e3a5f; margin: 2px 0; }
+    .sce-view-action { font-weight: 600; color: #374151; margin: 2px 0; }
+    .sce-view-label {
+        display: inline-block; font-size: 0.72em; font-weight: 700;
+        padding: 1px 5px; border-radius: 3px; margin-right: 5px;
+        vertical-align: middle; letter-spacing: 0.2px;
+    }
+    .sce-view-label.label-scene { background: #dbeafe; color: #1e3a5f; }
+    .sce-view-label.label-action { background: #f3f4f6; color: #374151; }
     .sce-view-notes {
         font-size: 0.85em; color: var(--text-muted); font-style: italic; margin: 2px 0;
     }
@@ -1214,13 +1236,20 @@
     .sce-view-sfx-text { flex: 1; font-weight: 600; color: #9f1239; }
 
     /* ---- Panel/Cut: EDIT MODE ---- */
+    @keyframes sce-edit-appear {
+        from { opacity: 0; transform: translateY(-4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
     .sce-edit { display: none; flex-direction: column; gap: 8px; padding: 8px 0; }
     .sce-panel.editing .sce-view { display: none; }
-    .sce-panel.editing .sce-edit { display: flex; }
+    .sce-panel.editing .sce-edit {
+        display: flex;
+        animation: sce-edit-appear 0.18s ease;
+    }
     .sce-panel.editing .sce-panel-hover-bar { display: none; }
     .sce-panel.editing {
-        background: #fafbfc; border: 1px solid var(--border);
-        border-radius: 8px; padding: 14px 16px; margin: 4px 0;
+        background: #f8fafc; border-left-color: var(--theme-primary);
+        border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 4px 0;
     }
 
     .sce-edit-header {
@@ -1264,8 +1293,15 @@
     }
     .sce-dyn-item[data-type="dialogue"] { border-left: 3px solid #3b82f6; }
     .sce-dyn-item[data-type="sfx"] { border-left: 3px solid #ef4444; }
+    .sce-view-empty {
+        border: 1.5px dashed #d1d5db; border-radius: 6px;
+        padding: 14px 16px; color: var(--text-muted); font-size: 0.82em;
+        text-align: center; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+        margin: 2px 0;
+    }
+    .sce-view-empty:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
     .sce-dyn-bar {
-        display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;
+        display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
         padding-right: 28px;
     }
     .sce-dyn-label {
@@ -5060,7 +5096,7 @@ function viewerSaveAll() {
         scenarioData.forEach((page, pageIdx) => {
             html += `<div class="sce-page" data-page-idx="${pageIdx}">`;
             html += `<div class="sce-page-header" onclick="scenarioTogglePage(this)">`;
-            html += `<div class="sce-page-title"><span class="sce-fold-icon">▼</span> ${pageIdx + 1}쪽</div>`;
+            html += `<div class="sce-page-title"><span class="sce-fold-icon">▼</span><span class="sce-page-num-badge">${pageIdx + 1}쪽</span></div>`;
             html += `<div class="sce-page-actions">`;
             html += `<button onclick="event.stopPropagation(); scenarioAddPanel(${pageIdx})">＋ 컷</button>`;
             html += `<button class="sce-del-page-btn" onclick="event.stopPropagation(); scenarioDeletePage(${pageIdx})">쪽 삭제</button>`;
@@ -5121,9 +5157,9 @@ function viewerSaveAll() {
         }
         html += `</div>`;
         // 장면
-        if (pd.scene) { hasContent = true; html += `<div class="sce-view-scene">${formatPanelText(pd.scene)}</div>`; }
+        if (pd.scene) { hasContent = true; html += `<div class="sce-view-scene"><span class="sce-view-label label-scene">장면</span>${formatPanelText(pd.scene)}</div>`; }
         // 행동
-        if (pd.action) { hasContent = true; html += `<div class="sce-view-action">${formatPanelText(pd.action)}</div>`; }
+        if (pd.action) { hasContent = true; html += `<div class="sce-view-action"><span class="sce-view-label label-action">행동</span>${formatPanelText(pd.action)}</div>`; }
         // 대사/효과음
         (pd.dynamicItems || []).forEach(item => {
             if (!item.text) return;
@@ -5151,7 +5187,7 @@ function viewerSaveAll() {
         // 특이사항
         if (pd.notes) { hasContent = true; html += `<div class="sce-view-notes">* ${formatPanelText(pd.notes)}</div>`; }
         // 내용 없음
-        if (!hasContent) html += `<div class="sce-view-notes" style="opacity:0.4">빈 컷</div>`;
+        if (!hasContent) html += `<div class="sce-view-empty" onclick="scenarioEditPanel(this.closest('.sce-panel').querySelector('.sce-panel-hover-bar button'))">+ 컷 내용 입력</div>`;
         return html;
     }
 
@@ -5576,8 +5612,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;m
 .sce-cut-num{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:${themePrimary};color:#fff;vertical-align:middle}
 .sce-cut-badge{display:inline-block;font-size:0.68em;font-weight:700;padding:1px 7px;border-radius:3px;background:${themePrimary};color:#fff;vertical-align:middle}
 .sce-cut-badge.type-open{background:#059669}.sce-cut-badge.type-flashback{background:#7c3aed}.sce-cut-badge.type-emphasis{background:#e63946}
-.sce-scene{font-weight:700;color:#14532d;margin:2px 0}
-.sce-action{font-weight:700;color:#713f12;margin:2px 0}
+.sce-scene{font-weight:700;color:#1e3a5f;margin:2px 0}
+.sce-action{font-weight:600;color:#374151;margin:2px 0}
 .sce-dlg-row,.sce-sfx-row{display:flex;gap:0;margin:1px 0;padding-left:24px;align-items:baseline}
 .sce-char{font-weight:700;min-width:56px;flex-shrink:0;text-align:left;padding-right:12px;font-size:0.92em}
 .sce-dlg{flex:1}.sce-dlg.narration{font-style:italic;color:#6c757d}.sce-dlg.thought{font-style:italic;opacity:0.7}
@@ -5659,8 +5695,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR
 .sce-cut-badge.type-open { background: #059669; }
 .sce-cut-badge.type-flashback { background: #7c3aed; }
 .sce-cut-badge.type-emphasis { background: #e63946; }
-.sce-scene { font-weight: 700; color: #14532d; margin: 2px 0; }
-.sce-action { font-weight: 700; color: #713f12; margin: 2px 0; }
+.sce-scene { font-weight: 700; color: #1e3a5f; margin: 2px 0; }
+.sce-action { font-weight: 600; color: #374151; margin: 2px 0; }
 .sce-dlg-row, .sce-sfx-row { display: flex; gap: 0; margin: 1px 0; padding-left: 24px; align-items: baseline; }
 .sce-char { font-weight: 700; min-width: 56px; flex-shrink: 0; text-align: left; padding-right: 12px; font-size: 0.92em; }
 .sce-dlg { flex: 1; } .sce-dlg.narration { font-style: italic; color: #6c757d; } .sce-dlg.thought { font-style: italic; opacity: 0.7; }
