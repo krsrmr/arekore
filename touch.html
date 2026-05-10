@@ -1095,12 +1095,6 @@
         font-weight: 700; font-size: 0.88em; color: var(--text-main);
         display: flex; align-items: center; gap: 8px;
     }
-    .sce-page-num-badge {
-        display: inline-flex; align-items: center;
-        background: var(--theme-primary); color: #fff;
-        border-radius: 4px; padding: 2px 9px; font-size: 0.82em;
-        font-weight: 800; letter-spacing: 0.3px;
-    }
     .sce-page-title .sce-fold-icon {
         font-size: 0.75em; color: var(--text-muted); transition: transform 0.2s;
     }
@@ -1129,17 +1123,18 @@
     /* ---- Panel/Cut: VIEW MODE (screenplay style) ---- */
     .sce-panel {
         position: relative;
-        padding: 10px 0 8px 14px;
-        transition: background 0.15s, border-left-color 0.18s;
-        border-radius: 0 4px 4px 0;
+        padding: 8px 0 8px 8px;
+        transition: background 0.15s;
+        border-radius: 4px;
         margin-top: 0;
-        border-left: 3px solid #e5e7eb;
     }
     .sce-panel + .sce-panel {
-        border-top: 1px solid #f0f0f0; padding-top: 12px;
+        border-top: 1px solid #f0f0f0; padding-top: 8px;
     }
     .sce-page-body > .sce-panel:first-child { margin-top: 0; }
-    .sce-view-badge-line { min-height: 20px; line-height: 20px; }
+    .sce-view-badge-line { line-height: 20px; }
+    .sce-view-badge-line.has-badge,
+    .sce-body.show-cut-nums .sce-view-badge-line { margin-bottom: 5px; }
     .sce-panel.dragging { opacity: 0.3; transform: scale(0.98); }
     .sce-panel.drag-over-top {
         box-shadow: 0 -3px 0 0 var(--accent);
@@ -1158,7 +1153,7 @@
         pointer-events: none;
     }
     .sce-panel:hover .sce-panel-hover-bar { opacity: 1; pointer-events: auto; }
-    .sce-panel:hover { background: rgba(0,0,0,0.012); border-left-color: #cbd5e1; }
+    .sce-panel:hover { background: rgba(0,0,0,0.012); }
     .sce-panel-hover-bar button {
         padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border);
         background: #fff; font-size: 0.7em; cursor: pointer; color: var(--text-muted);
@@ -1183,9 +1178,6 @@
         vertical-align: middle;
     }
     .sce-body.show-cut-nums .sce-panel-cut-num-badge { display: inline-block; }
-    .sce-body.show-cut-nums .sce-panel {
-        padding-top: 10px;
-    }
     .sce-body.show-cut-nums .sce-page-body > .sce-panel:first-child { border-top: none; margin-top: 0; }
 
     .sce-view-cut-badge {
@@ -1198,8 +1190,8 @@
     .sce-view-cut-badge.type-flashback { background: #7c3aed; }
     .sce-view-cut-badge.type-emphasis { background: var(--accent); }
     .sce-body.hide-cut-types .sce-view-cut-badge { visibility: hidden; }
-    .sce-view-scene { font-weight: 700; color: #1e3a5f; margin: 2px 0; }
-    .sce-view-action { font-weight: 600; color: #374151; margin: 2px 0; }
+    .sce-view-scene { font-weight: 700; color: #1f2937; margin: 2px 0; }
+    .sce-view-action { font-weight: 400; color: #1f2937; margin: 2px 0; }
     .sce-view-label {
         display: inline-block; font-size: 0.72em; font-weight: 700;
         padding: 1px 5px; border-radius: 3px; margin-right: 5px;
@@ -1248,7 +1240,7 @@
     }
     .sce-panel.editing .sce-panel-hover-bar { display: none; }
     .sce-panel.editing {
-        background: #f8fafc; border-left-color: var(--theme-primary);
+        background: #f8fafc; border-left: 3px solid var(--theme-primary);
         border-radius: 0 8px 8px 0; padding: 14px 16px; margin: 4px 0;
     }
 
@@ -5096,7 +5088,7 @@ function viewerSaveAll() {
         scenarioData.forEach((page, pageIdx) => {
             html += `<div class="sce-page" data-page-idx="${pageIdx}">`;
             html += `<div class="sce-page-header" onclick="scenarioTogglePage(this)">`;
-            html += `<div class="sce-page-title"><span class="sce-fold-icon">▼</span><span class="sce-page-num-badge">${pageIdx + 1}쪽</span></div>`;
+            html += `<div class="sce-page-title"><span class="sce-fold-icon">▼</span> ${pageIdx + 1}쪽</div>`;
             html += `<div class="sce-page-actions">`;
             html += `<button onclick="event.stopPropagation(); scenarioAddPanel(${pageIdx})">＋ 컷</button>`;
             html += `<button class="sce-del-page-btn" onclick="event.stopPropagation(); scenarioDeletePage(${pageIdx})">쪽 삭제</button>`;
@@ -5146,9 +5138,10 @@ function viewerSaveAll() {
     function renderScenarioPanelView(pd, panelIdx, chars, globalCutIdx) {
         let html = '';
         let hasContent = false;
-        // 뱃지 라인 (컷 번호 + 컷 종류) — 고정 높이
+        // 뱃지 라인 (컷 번호 + 컷 종류)
         const cutNum = (globalCutIdx != null ? globalCutIdx : panelIdx) + 1;
-        html += `<div class="sce-view-badge-line">`;
+        const hasBadge = !!pd.type;
+        html += `<div class="sce-view-badge-line${hasBadge ? ' has-badge' : ''}">`;
         html += `<span class="sce-panel-cut-num-badge">컷 ${cutNum}</span>`;
         if (pd.type) {
             hasContent = true;
