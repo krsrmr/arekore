@@ -2265,6 +2265,9 @@
             }
             // Ctrl+Z : 실행 취소
             if (!e.shiftKey && e.code === 'KeyZ') {
+                // 텍스트 입력 필드 포커스 중이면 브라우저 기본 실행 취소(글자 단위) 허용
+                const ae = document.activeElement;
+                if (ae && (ae.tagName === 'TEXTAREA' || (ae.tagName === 'INPUT' && ae.type !== 'color' && ae.type !== 'number' && ae.type !== 'checkbox'))) return;
                 e.preventDefault();
                 undo();
                 if (currentEditorMode === 'scenario') { scenarioData = collectScenarioData(); renderScenarioEditor(); }
@@ -2535,7 +2538,6 @@
         try {
             const data = JSON.parse(saved);
             if (!data.projects || data.projects.length === 0) return false;
-            if (!confirm('이전에 자동 저장된 작업이 있습니다. 불러오시겠습니까?')) return false;
             loadFromData(data);
             return true;
         } catch { return false; }
@@ -4609,7 +4611,9 @@ function viewerSaveAll() {
 
     // ===== SCENARIO EDITOR MODE =====
     let currentEditorMode = 'conti'; // 'conti' | 'scenario'
-    let scenarioData = []; // [{panels: [panelData, ...]}, ...]
+    let scenarioData = [];
+    let savedScrollConti = 0;    // 모드 전환 시 콘티 스크롤 위치 보존
+    let savedScrollScenario = 0; // 모드 전환 시 시나리오 스크롤 위치 보존 // [{panels: [panelData, ...]}, ...]
 
     function toggleEditorMode() {
         if (currentEditorMode === 'conti') {
@@ -4620,6 +4624,9 @@ function viewerSaveAll() {
     }
 
     function switchToScenarioMode() {
+        const mainEl = document.getElementById('main-content');
+        savedScrollConti = mainEl ? mainEl.scrollTop : 0;
+
         // 현재 콘티 데이터를 저장
         saveAllPanels();
         scenarioData = collectScenarioData();
@@ -4647,9 +4654,14 @@ function viewerSaveAll() {
         // 시나리오 에디터에서 입력 시 auto-save 트리거
         const sceEditor = document.getElementById('scenarioEditor');
         sceEditor.oninput = function() { scheduleAutoSave(); };
+
+        requestAnimationFrame(() => { if (mainEl) mainEl.scrollTop = savedScrollScenario; });
     }
 
     function switchToContiMode() {
+        const mainEl = document.getElementById('main-content');
+        savedScrollScenario = mainEl ? mainEl.scrollTop : 0;
+
         // 시나리오 데이터를 DOM에서 읽기
         scenarioReadFromDOM();
         takeSnapshot();
@@ -4670,6 +4682,7 @@ function viewerSaveAll() {
         if (topMenu) topMenu.style.display = '';
 
         scheduleAutoSave();
+        requestAnimationFrame(() => { if (mainEl) mainEl.scrollTop = savedScrollConti; });
     }
 
     function collectScenarioData() {
