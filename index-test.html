@@ -32,7 +32,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <style>
     :root {
         --page-scale: 1;
@@ -5630,88 +5629,6 @@ window.onafterprint = function() {
     }
 
     initApp();
-</script>
-
-<!-- ===== 모션 레이어 (GSAP) — 테스트 빌드 전용 ===== -->
-<script>
-(function () {
-    'use strict';
-    var reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    function gs() { return (window.gsap && !reduce) ? window.gsap : null; }
-
-    // 펼침면(스프레드) 진입 스태거 — renderPages 이후 호출
-    function animateSpreads() {
-        var g = gs(); if (!g) return;
-        var ws = document.getElementById('workspace');
-        if (!ws || getComputedStyle(ws).display === 'none') return;
-        var items = ws.querySelectorAll(':scope > .spread');
-        if (!items.length) return;
-        g.killTweensOf(items);
-        g.fromTo(items,
-            { opacity: 0, y: 16, scale: 0.985 },
-            { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: 'power3.out',
-              stagger: 0.055, clearProps: 'opacity,transform', overwrite: true });
-    }
-
-    // 사이드바 항목 진입 스태거 — renderSidebar 이후 호출
-    function animateSidebar() {
-        var g = gs(); if (!g) return;
-        var tree = document.getElementById('sidebar-scroll');
-        if (!tree || !tree.children.length) return;
-        g.fromTo(tree.children,
-            { opacity: 0, x: -10 },
-            { opacity: 1, x: 0, duration: 0.34, ease: 'power2.out',
-              stagger: 0.03, clearProps: 'opacity,transform', overwrite: true });
-    }
-
-    // 전역 렌더 함수 래핑 (원본 로직 유지, 애니메이션만 추가)
-    function wrap(name, after) {
-        var orig = window[name];
-        if (typeof orig !== 'function') return;
-        window[name] = function () {
-            var r = orig.apply(this, arguments);
-            try { after(); } catch (e) {}
-            return r;
-        };
-    }
-    wrap('renderPages', animateSpreads);
-    wrap('renderSidebar', animateSidebar);
-
-    // 버튼 눌림 마이크로 인터랙션 (탄성 복귀)
-    var pressed = null;
-    function bindPress() {
-        var g = gs(); if (!g) return;
-        document.addEventListener('pointerdown', function (e) {
-            var btn = e.target.closest && e.target.closest('button');
-            if (!btn || btn.disabled || btn.closest('[contenteditable="true"]')) return;
-            pressed = btn;
-            g.to(btn, { scale: 0.94, duration: 0.12, ease: 'power2.out', overwrite: 'auto' });
-        }, true);
-        function release() {
-            if (!pressed) return;
-            var btn = pressed; pressed = null;
-            g.to(btn, { scale: 1, duration: 0.32, ease: 'elastic.out(1, 0.6)',
-                        overwrite: 'auto', clearProps: 'transform' });
-        }
-        document.addEventListener('pointerup', release, true);
-        document.addEventListener('pointercancel', release, true);
-    }
-
-    // 최초 진입: 툴바 살짝 내려오기 + 인터랙션 바인딩
-    function boot() {
-        var g = gs();
-        if (!g) return;
-        var toolbar = document.querySelector('.toolbar');
-        if (toolbar) g.fromTo(toolbar, { opacity: 0, y: -12 },
-            { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out', clearProps: 'transform' });
-        bindPress();
-    }
-    if (document.readyState === 'loading') {
-        window.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 0); });
-    } else {
-        setTimeout(boot, 0);
-    }
-})();
 </script>
 </body>
 </html>
