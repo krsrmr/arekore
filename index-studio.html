@@ -3645,79 +3645,84 @@
         svg.querySelector('polygon').setAttribute('points', pts.map(p => p[0] + ',' + p[1]).join(' '));
     }
     // 변 핸들 드래그 시 해당 변의 두 모서리를 대칭 이동(변을 회전)
-    function _applyEdgeDelta(t, edge, dx, dy) {
-        if (edge === 'top')    { t.tl.dy += dy; t.tr.dy -= dy; }
-        else if (edge === 'bottom') { t.bl.dy += dy; t.br.dy -= dy; }
-        else if (edge === 'left')   { t.tl.dx += dx; t.bl.dx -= dx; }
-        else if (edge === 'right')  { t.tr.dx += dx; t.br.dx -= dx; }
-    }
-    // 맞닿은 이웃 컷을 찾아 대응 변을 동일 사선으로 대칭 복사
-    function _autoMirror(panel, edge) {
-        const cont = panel.closest('.panel-container'); if (!cont) return;
+    // ===== 코너(꼭짓점) 제어점 — CSP식 컷 변형 + 공유 꼭짓점 연동 =====
+    const _CORNERS = ['tl','tr','br','bl'];
+    function _rectCorner(panel, key) {
         const L = panel.offsetLeft, T = panel.offsetTop, W = panel.offsetWidth, H = panel.offsetHeight;
-        const near = (a, b) => Math.abs(a - b) <= SNAP_TOL;
-        const t = getTilt(panel); if (!t) return;
-        cont.querySelectorAll('.panel').forEach(o => {
-            if (o === panel) return;
-            const ol = o.offsetLeft, ot = o.offsetTop, ow = o.offsetWidth, oh = o.offsetHeight;
-            let ot2, from, to;
-            if (edge === 'bottom' && near(ot, T + H) && near(ol, L) && near(ol + ow, L + W)) { from = ['bl','br']; to = ['tl','tr']; }
-            else if (edge === 'top' && near(ot + oh, T) && near(ol, L) && near(ol + ow, L + W)) { from = ['tl','tr']; to = ['bl','br']; }
-            else if (edge === 'right' && near(ol, L + W) && near(ot, T) && near(ot + oh, T + H)) { from = ['tr','br']; to = ['tl','bl']; }
-            else if (edge === 'left' && near(ol + ow, L) && near(ot, T) && near(ot + oh, T + H)) { from = ['tl','bl']; to = ['tr','br']; }
-            else return;
-            const ot3 = getTilt(o) || _emptyTilt();
-            ot3[to[0]] = { dx: t[from[0]].dx, dy: t[from[0]].dy };
-            ot3[to[1]] = { dx: t[from[1]].dx, dy: t[from[1]].dy };
-            setTilt(o, ot3);
+        return { tl:[L,T], tr:[L+W,T], br:[L+W,T+H], bl:[L,T+H] }[key];
+    }
+    function _cornerAbs(panel, key) {
+        const b = _rectCorner(panel, key), t = getTilt(panel);
+        const o = (t && t[key]) ? t[key] : { dx:0, dy:0 };
+        return [b[0] + (o.dx||0), b[1] + (o.dy||0)];
+    }
+    function _setCornerAbs(panel, key, x, y) {
+        const b = _rectCorner(panel, key);
+        const t = getTilt(panel) || _emptyTilt();
+        t[key] = { dx: x - b[0], dy: y - b[1] };
+        setTilt(panel, t);
+    }
+    // 시작 위치와 겹치는(공유된) 모든 컷의 꼭짓점 — 함께 이동(연동)
+    function _linkedCorners(cont, absPos) {
+        const group = [];
+        cont.querySelectorAll('.panel').forEach(p => {
+            _CORNERS.forEach(k => {
+                const c = _cornerAbs(p, k);
+                if (Math.abs(c[0]-absPos[0]) <= SNAP_TOL && Math.abs(c[1]-absPos[1]) <= SNAP_TOL) group.push({ panel:p, key:k });
+            });
         });
+        return group;
     }
-    function resetEdgeTilt(panel, edge) {
-        const t = getTilt(panel); if (!t) return;
-        takeSnapshot();
-        const map = { top:['tl','tr'], bottom:['bl','br'], left:['tl','bl'], right:['tr','br'] };
-        map[edge].forEach(k => { t[k] = { dx:0, dy:0 }; });
-        setTilt(panel, t); _autoMirror(panel, edge); refreshTiltHandles(); scheduleAutoSave();
+    // 드래그 중 꼭짓점을 다른 컷 기준선·페이지 경계에 스냅
+    function _snapPoint(panel, x, y) {
+        const { V, H } = _snapTargetLines(panel);
+        let vLine = null, hLine = null;
+        const bx = _pickSnap([x], V); if (bx) { x += bx.delta; vLine = bx.line; }
+        const by = _pickSnap([y], H); if (by) { y += by.delta; hLine = by.line; }
+        return { x, y, vLine, hLine };
     }
-    function startTiltDrag(e, panel, edge) {
+    function startCornerDrag(e, panel, key) {
         e.preventDefault(); e.stopPropagation();
         takeSnapshot();
+        const cont = panel.closest('.panel-container');
         const scale = getCurrentScale();
+        const start = _cornerAbs(panel, key);
+        const group = _linkedCorners(cont, start);   // 공유 꼭짓점 = 함께 이동
+        let curX = start[0], curY = start[1];
         let px = e.clientX, py = e.clientY;
-        const t = getTilt(panel) || _emptyTilt();
         document.onmousemove = (ev) => {
-            const dx = (ev.clientX - px) / scale, dy = (ev.clientY - py) / scale;
+            curX += (ev.clientX - px) / scale; curY += (ev.clientY - py) / scale;
             px = ev.clientX; py = ev.clientY;
-            _applyEdgeDelta(t, edge, dx, dy);
-            setTilt(panel, t);
-            _autoMirror(panel, edge);
+            let tx = curX, ty = curY;
+            if (snapEnabled) { const s = _snapPoint(panel, tx, ty); tx = s.x; ty = s.y; showGuides(cont, s.vLine, s.hLine); }
+            group.forEach(g => _setCornerAbs(g.panel, g.key, tx, ty));
             refreshTiltHandles();
         };
-        document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; scheduleAutoSave(); };
+        document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; clearAllGuides(); scheduleAutoSave(); };
     }
-    // 선택된 컷의 4변 중앙에 기울이기 핸들 배치(컨테이너 좌표, clip 영향 없음)
+    // 꼭짓점을 원래 직각 위치로 복귀 (연동된 이웃 꼭짓점도 함께)
+    function resetCorner(panel, key) {
+        takeSnapshot();
+        const cont = panel.closest('.panel-container');
+        const group = _linkedCorners(cont, _cornerAbs(panel, key));
+        const target = _rectCorner(panel, key);
+        group.forEach(g => _setCornerAbs(g.panel, g.key, target[0], target[1]));
+        refreshTiltHandles(); scheduleAutoSave();
+    }
+    // 선택된 컷의 4꼭짓점에 제어점 배치(컨테이너 좌표, clip 영향 없음)
     function refreshTiltHandles() {
         document.querySelectorAll('.tilt-handle').forEach(h => h.remove());
         const panel = activePanel;
         if (!panel || !panel.isConnected) return;
         const cont = panel.closest('.panel-container'); if (!cont) return;
-        const L = panel.offsetLeft, T = panel.offsetTop, W = panel.offsetWidth, H = panel.offsetHeight;
-        const t = getTilt(panel) || {};
-        const o = k => ({ dx: (t[k] && t[k].dx) || 0, dy: (t[k] && t[k].dy) || 0 });
-        const tl = o('tl'), tr = o('tr'), br = o('br'), bl = o('bl');
-        const mids = {
-            top:    [L + W/2 + (tl.dx + tr.dx)/2, T     + (tl.dy + tr.dy)/2],
-            bottom: [L + W/2 + (bl.dx + br.dx)/2, T + H + (bl.dy + br.dy)/2],
-            left:   [L     + (tl.dx + bl.dx)/2, T + H/2 + (tl.dy + bl.dy)/2],
-            right:  [L + W + (tr.dx + br.dx)/2, T + H/2 + (tr.dy + br.dy)/2]
-        };
-        ['top','bottom','left','right'].forEach(edge => {
+        _CORNERS.forEach(key => {
+            const [x, y] = _cornerAbs(panel, key);
             const hd = document.createElement('div');
-            hd.className = 'tilt-handle tilt-h-' + edge;
-            hd.style.left = mids[edge][0] + 'px'; hd.style.top = mids[edge][1] + 'px';
-            hd.title = '드래그: 컷선 기울이기 · 더블클릭: 초기화';
-            hd.addEventListener('mousedown', ev => startTiltDrag(ev, panel, edge));
-            hd.addEventListener('dblclick', ev => { ev.stopPropagation(); resetEdgeTilt(panel, edge); });
+            hd.className = 'tilt-handle tilt-c-' + key;
+            hd.style.left = x + 'px'; hd.style.top = y + 'px';
+            hd.title = '드래그: 꼭짓점 이동(인접 컷과 연동) · 더블클릭: 직각 복귀';
+            hd.addEventListener('mousedown', ev => startCornerDrag(ev, panel, key));
+            hd.addEventListener('dblclick', ev => { ev.stopPropagation(); resetCorner(panel, key); });
             cont.appendChild(hd);
         });
     }
