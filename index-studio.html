@@ -799,10 +799,12 @@
     .snap-guide-v { top: 0; bottom: 0; width: 1px; }
     .snap-guide-h { left: 0; right: 0; height: 1px; }
 
-    /* 컷선 기울이기 */
-    .panel.tilted { border-color: transparent !important; box-shadow: none !important; }
+    /* 컷 꼭짓점 변형 (CSP식) */
+    .panel.tilted { background: transparent !important; border-color: transparent !important; box-shadow: none !important; overflow: visible; }
+    .tilt-fill-svg { position: absolute; inset: 0; pointer-events: none; z-index: -1; overflow: visible; }
+    .tilt-fill-svg polygon { fill: #ffffff; }
     .tilt-svg { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: visible; }
-    .tilt-poly { fill: none; stroke: #2b3242; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+    .tilt-svg polygon { fill: none; stroke: #2b3242; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
     .tilt-handle {
         position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px;
         background: #3b82f6; border: 2px solid #fff; border-radius: 50%;
@@ -3619,32 +3621,45 @@
     }
     function applyTilt(panel) {
         const t = getTilt(panel);
-        let svg = panel.querySelector(':scope > .tilt-svg');
+        const body = panel.querySelector(':scope > .panel-body');
+        const fillSvg = panel.querySelector(':scope > .tilt-fill-svg');
+        const lineSvg = panel.querySelector(':scope > .tilt-svg');
         if (_tiltZero(t)) {
             panel.classList.remove('tilted'); panel.style.clipPath = '';
-            if (svg) svg.remove();
+            if (body) body.style.clipPath = '';
+            if (fillSvg) fillSvg.remove();
+            if (lineSvg) lineSvg.remove();
             return;
         }
         const w = panel.offsetWidth, h = panel.offsetHeight;
         if (!w || !h) return;
         const g = k => ({ dx: (t[k] && t[k].dx) || 0, dy: (t[k] && t[k].dy) || 0 });
         const tl = g('tl'), tr = g('tr'), br = g('br'), bl = g('bl');
+        // 로컬 좌표 4점 (박스 밖으로 나갈 수 있음)
         const pts = [
             [0 + tl.dx, 0 + tl.dy], [w + tr.dx, 0 + tr.dy],
             [w + br.dx, h + br.dy], [0 + bl.dx, h + bl.dy]
         ];
+        const ptsAttr = pts.map(p => p[0] + ',' + p[1]).join(' ');
+        const polyStr = 'polygon(' + pts.map(p => p[0] + 'px ' + p[1] + 'px').join(', ') + ')';
         panel.classList.add('tilted');
-        panel.style.clipPath = 'polygon(' + pts.map(p => p[0] + 'px ' + p[1] + 'px').join(', ') + ')';
+        panel.style.clipPath = '';                 // 패널 자체는 클립하지 않음(SVG 오버플로우 허용)
+        if (body) body.style.clipPath = polyStr;   // 콘텐츠만 4각형으로 클립
         const NS = 'http://www.w3.org/2000/svg';
-        if (!svg) {
-            svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'tilt-svg');
-            const poly = document.createElementNS(NS, 'polygon'); poly.setAttribute('class', 'tilt-poly');
-            svg.appendChild(poly); panel.appendChild(svg);
-        }
-        svg.setAttribute('width', w); svg.setAttribute('height', h); svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-        svg.querySelector('polygon').setAttribute('points', pts.map(p => p[0] + ',' + p[1]).join(' '));
+        const ensure = (cls) => {
+            let s = panel.querySelector(':scope > .' + cls);
+            if (!s) {
+                s = document.createElementNS(NS, 'svg'); s.setAttribute('class', cls);
+                s.appendChild(document.createElementNS(NS, 'polygon'));
+                panel.insertBefore(s, panel.firstChild);
+            }
+            s.setAttribute('width', w); s.setAttribute('height', h); s.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+            s.querySelector('polygon').setAttribute('points', ptsAttr);
+        };
+        ensure('tilt-fill-svg');  // 흰 채움 (z-index:-1, 박스 밖까지)
+        ensure('tilt-svg');       // 외곽선 (z-index:3)
     }
-    // 변 핸들 드래그 시 해당 변의 두 모서리를 대칭 이동(변을 회전)
+    // (구) 변 핸들 대칭 로직 — 코너 방식으로 대체됨
     // ===== 코너(꼭짓점) 제어점 — CSP식 컷 변형 + 공유 꼭짓점 연동 =====
     const _CORNERS = ['tl','tr','br','bl'];
     function _rectCorner(panel, key) {
@@ -3662,13 +3677,28 @@
         t[key] = { dx: x - b[0], dy: y - b[1] };
         setTilt(panel, t);
     }
-    // 시작 위치와 겹치는(공유된) 모든 컷의 꼭짓점 — 함께 이동(연동)
-    function _linkedCorners(cont, absPos) {
-        const group = [];
-        cont.querySelectorAll('.panel').forEach(p => {
+    // 연동 대상 꼭짓점 그룹: 완전 일치(공유) + 거터(간격)만큼 떨어져 마주보는 꼭짓점
+    // → 같은 델타로 함께 이동하므로 간격(거터)이 보존됨
+    const _GUTTER_MAX = 44; // 연동으로 인정할 최대 거터 거리(px)
+    function _linkedCorners(cont, panel, key, absPos) {
+        const group = [{ panel, key }];
+        const [cx, cy] = absPos;
+        const SIDE = { tl:['L','T'], tr:['R','T'], br:['R','B'], bl:['L','B'] };
+        const me = SIDE[key];
+        cont.querySelectorAll('.panel').forEach(o => {
+            if (o === panel) return;
             _CORNERS.forEach(k => {
-                const c = _cornerAbs(p, k);
-                if (Math.abs(c[0]-absPos[0]) <= SNAP_TOL && Math.abs(c[1]-absPos[1]) <= SNAP_TOL) group.push({ panel:p, key:k });
+                const oc = _cornerAbs(o, k);
+                const dx = oc[0] - cx, dy = oc[1] - cy;
+                if (Math.abs(dx) <= SNAP_TOL && Math.abs(dy) <= SNAP_TOL) { group.push({ panel:o, key:k }); return; } // 공유 꼭짓점
+                const os = SIDE[k];
+                // 세로 거터: 내 우변↔상대 좌변(또는 반대), 세로 위치 근접, 가로 간격이 거터 이내
+                const horiz = ((me[0]==='R' && os[0]==='L' && dx>0) || (me[0]==='L' && os[0]==='R' && dx<0))
+                            && Math.abs(dx) <= _GUTTER_MAX && Math.abs(dy) <= SNAP_TOL * 1.5;
+                // 가로 거터: 내 하변↔상대 상변(또는 반대)
+                const vert  = ((me[1]==='B' && os[1]==='T' && dy>0) || (me[1]==='T' && os[1]==='B' && dy<0))
+                            && Math.abs(dy) <= _GUTTER_MAX && Math.abs(dx) <= SNAP_TOL * 1.5;
+                if (horiz || vert) group.push({ panel:o, key:k });
             });
         });
         return group;
@@ -3687,7 +3717,9 @@
         const cont = panel.closest('.panel-container');
         const scale = getCurrentScale();
         const start = _cornerAbs(panel, key);
-        const group = _linkedCorners(cont, start);   // 공유 꼭짓점 = 함께 이동
+        const group = _linkedCorners(cont, panel, key, start);
+        // 각 연동 꼭짓점의 시작 위치 기록 → 같은 델타로 이동(거터 보존)
+        const starts = group.map(g => ({ panel:g.panel, key:g.key, pos:_cornerAbs(g.panel, g.key) }));
         let curX = start[0], curY = start[1];
         let px = e.clientX, py = e.clientY;
         document.onmousemove = (ev) => {
@@ -3695,18 +3727,21 @@
             px = ev.clientX; py = ev.clientY;
             let tx = curX, ty = curY;
             if (snapEnabled) { const s = _snapPoint(panel, tx, ty); tx = s.x; ty = s.y; showGuides(cont, s.vLine, s.hLine); }
-            group.forEach(g => _setCornerAbs(g.panel, g.key, tx, ty));
+            const ddx = tx - start[0], ddy = ty - start[1];
+            starts.forEach(s => _setCornerAbs(s.panel, s.key, s.pos[0] + ddx, s.pos[1] + ddy));
             refreshTiltHandles();
         };
-        document.onmouseup = () => { document.onmousemove = null; document.onmouseup = null; clearAllGuides(); scheduleAutoSave(); };
+        document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; clearAllGuides(); scheduleAutoSave(); };
     }
-    // 꼭짓점을 원래 직각 위치로 복귀 (연동된 이웃 꼭짓점도 함께)
+    // 꼭짓점을 원래 직각 위치로 복귀 (연동된 이웃 꼭짓점은 같은 델타로 함께 이동 → 거터 유지)
     function resetCorner(panel, key) {
         takeSnapshot();
         const cont = panel.closest('.panel-container');
-        const group = _linkedCorners(cont, _cornerAbs(panel, key));
+        const start = _cornerAbs(panel, key);
+        const group = _linkedCorners(cont, panel, key, start);
         const target = _rectCorner(panel, key);
-        group.forEach(g => _setCornerAbs(g.panel, g.key, target[0], target[1]));
+        const ddx = target[0] - start[0], ddy = target[1] - start[1];
+        group.forEach(g => { const p = _cornerAbs(g.panel, g.key); _setCornerAbs(g.panel, g.key, p[0] + ddx, p[1] + ddy); });
         refreshTiltHandles(); scheduleAutoSave();
     }
     // 선택된 컷의 4꼭짓점에 제어점 배치(컨테이너 좌표, clip 영향 없음)
