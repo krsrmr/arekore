@@ -804,7 +804,7 @@
     .tilt-fill-svg { position: absolute; inset: 0; pointer-events: none; z-index: -1; overflow: visible; }
     .tilt-fill-svg polygon { fill: #ffffff; }
     .tilt-svg { position: absolute; inset: 0; pointer-events: none; z-index: 3; overflow: visible; }
-    .tilt-svg polygon { fill: none; stroke: #2b3242; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+    .tilt-svg polygon { fill: none; stroke: #adb5bd; stroke-width: 2; stroke-linejoin: miter; }
     .tilt-handle {
         position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px;
         background: #3b82f6; border: 2px solid #fff; border-radius: 50%;
@@ -3331,6 +3331,7 @@
             else if (val==='회상 컷') panel.classList.add('type-flashback');
             else if (val==='강조 컷') panel.classList.add('type-emphasis');
         } else { badge.style.display = "none"; panel.classList.remove('has-badge'); }
+        if (panel.dataset.tilt) applyTilt(panel);   // 기울인 컷도 종류별 외곽선 갱신
     }
 
     function addDynamicItem(btn, type, defaultText="", defaultColor="", isNarration=false, charId="", isThought=false) {
@@ -3655,9 +3656,24 @@
             }
             s.setAttribute('width', w); s.setAttribute('height', h); s.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
             s.querySelector('polygon').setAttribute('points', ptsAttr);
+            return s.querySelector('polygon');
         };
-        ensure('tilt-fill-svg');  // 흰 채움 (z-index:-1, 박스 밖까지)
-        ensure('tilt-svg');       // 외곽선 (z-index:3)
+        const fillPoly = ensure('tilt-fill-svg');  // 채움 (z-index:-1, 박스 밖까지)
+        const linePoly = ensure('tilt-svg');       // 외곽선 (z-index:3)
+        // 일반 컷 테두리 디자인에 맞춤 (컷 종류별 색/스타일 동일)
+        const st = _cutStyle(panel);
+        fillPoly.setAttribute('fill', st.fill);
+        linePoly.setAttribute('stroke', st.stroke);
+        linePoly.setAttribute('stroke-width', st.width);
+        linePoly.setAttribute('stroke-dasharray', st.dash);
+    }
+    // 컷 종류별 테두리/배경 (일반 .panel 스타일과 동일하게 유지)
+    function _cutStyle(panel) {
+        const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#e63946';
+        if (panel.classList.contains('type-emphasis'))  return { stroke: accent,    width: 2, dash: '',   fill: '#ffffff' };
+        if (panel.classList.contains('type-open'))       return { stroke: '#ced4da', width: 2, dash: '7 5', fill: '#ffffff' };
+        if (panel.classList.contains('type-flashback'))  return { stroke: '#adb5bd', width: 2, dash: '',   fill: '#efefef' };
+        return { stroke: '#adb5bd', width: 2, dash: '', fill: '#ffffff' };
     }
     // (구) 변 핸들 대칭 로직 — 코너 방식으로 대체됨
     // ===== 코너(꼭짓점) 제어점 — CSP식 컷 변형 + 공유 꼭짓점 연동 =====
